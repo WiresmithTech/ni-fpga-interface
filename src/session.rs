@@ -6,7 +6,7 @@ use nifpga_sys::*;
 // and cleanup on drop.
 
 
-pub struct SessionHandle(u32);
+pub type SessionHandle = u32;
 
 pub struct Session {
     pub handle: SessionHandle

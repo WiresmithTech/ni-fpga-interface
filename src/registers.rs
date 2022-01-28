@@ -1,8 +1,9 @@
 //! Implements the register interfaces to the FPGA.
 //!
-use crate::error::Result;
+use crate::error::{Result, to_fpga_result};
+use crate::session::Session;
 
-type RegisterAddress = usize;
+type RegisterAddress = u32;
 
 /// Provides a binding to a register address including a type.
 ///
@@ -40,6 +41,26 @@ trait RegisterInterface<T> {
 trait CustomRegisterType<const S: usize> {
     fn from_buffer(buffer: &[u8; S]) -> Self;
     fn to_buffer(&self, buffer: &mut [u8; S]);
+}
+
+impl RegisterInterface<u8> for Session {
+
+    fn read(&self, address: RegisterAddress) -> Result<u8> {
+        let mut value: u8 = 0;
+        let return_code = unsafe {
+            nifpga_sys::read_u8(self.handle, address, &mut value)
+        };
+        to_fpga_result(value, return_code)
+    }
+
+    fn write(&self, address: RegisterAddress, value: u8) -> Result<()> {
+        let return_code = unsafe {
+            nifpga_sys::write_u8(self.handle, address, value)
+        };
+        to_fpga_result((), return_code)
+
+    }
+
 }
 
 
