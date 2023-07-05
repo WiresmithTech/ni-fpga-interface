@@ -1,4 +1,4 @@
-/target
+target
 
 
 # Added by cargo
@@ -7,3 +7,7 @@
 
 #/target
 Cargo.lock
+
+# LabVIEW project files
+*.lvlps
+*.aliases

@@ -1,7 +1,10 @@
 //! Error support for the FPGA Interface.
 
+pub type NiFpga_Status = i32;
+
+#[derive(Debug)]
 pub enum FPGAError {
-    InternalError(i32)
+    InternalError(i32),
 }
 
 pub type Result<T> = core::result::Result<T, FPGAError>;
@@ -15,8 +18,7 @@ impl FPGAError {
 pub fn to_fpga_result<T>(value: T, return_code: i32) -> Result<T> {
     if return_code == 0 {
         Ok(value)
-    }
-    else {
+    } else {
         Err(FPGAError::from_code(return_code))
     }
 }

@@ -1,6 +1,7 @@
+pub mod build;
 mod error;
-mod registers;
-mod session;
+pub mod registers;
+pub mod session;
 
 #[cfg(test)]
 mod tests {

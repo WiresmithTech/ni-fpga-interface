@@ -1,13 +1,86 @@
 //! Holds session management functions for the FPGA.
-//! 
-use nifpga_sys::*;
+//!
+use std::sync::Once;
 
-//todo: need to do one time intialisation of FPGA library
-// and cleanup on drop.
+use crate::error::{to_fpga_result, NiFpga_Status};
 
+static LIB_INIT: Once = Once::new();
+
+extern "C" {
+    fn NiFpga_Initialize() -> i32;
+    //fn NiFpga_Finalize() -> NiFpga_Status;
+    fn NiFpga_Open(
+        bitfile: *const i8,
+        signature: *const i8,
+        resource: *const i8,
+        attribute: u32,
+        session: *mut SessionHandle,
+    ) -> NiFpga_Status;
+    fn NiFpga_Reset(session: SessionHandle) -> NiFpga_Status;
+    fn NiFpga_Run(session: SessionHandle) -> NiFpga_Status;
+    fn NiFpga_Close(session: SessionHandle, attribute: u32) -> NiFpga_Status;
+}
 
 pub type SessionHandle = u32;
 
 pub struct Session {
-    pub handle: SessionHandle
+    pub handle: SessionHandle,
 }
+
+impl Session {
+    pub fn new(
+        bitfile: &str,
+        signature: &str,
+        resource: &str,
+    ) -> Result<Self, crate::error::FPGAError> {
+        LIB_INIT.call_once(|| unsafe {
+            //NiFpga_Initialize();
+        });
+        unsafe {
+            NiFpga_Initialize();
+        }
+
+        let mut handle: SessionHandle = 0;
+        let bitfile = std::ffi::CString::new(bitfile).unwrap();
+        let signature = std::ffi::CString::new(signature).unwrap();
+        let resource = std::ffi::CString::new(resource).unwrap();
+        let result = unsafe {
+            NiFpga_Open(
+                bitfile.as_ptr(),
+                signature.as_ptr(),
+                resource.as_ptr(),
+                0,
+                &mut handle,
+            )
+        };
+        to_fpga_result(Self { handle }, result)
+    }
+
+    pub fn reset(&mut self) -> Result<(), crate::error::FPGAError> {
+        println!("reset");
+        let result = unsafe { NiFpga_Reset(self.handle) };
+
+        to_fpga_result((), result)
+    }
+
+    pub fn run(&mut self) -> Result<(), crate::error::FPGAError> {
+        let result = unsafe { NiFpga_Run(self.handle) };
+
+        to_fpga_result((), result)
+    }
+
+    pub fn close(self) -> Result<(), crate::error::FPGAError> {
+        let result = unsafe { NiFpga_Close(self.handle, 0) };
+
+        to_fpga_result((), 0)
+    }
+}
+
+/*/
+impl Drop for Session {
+    fn drop(&mut self) {
+        unsafe {
+            NiFpga_Close(self.handle, 0);
+        }
+    }
+} */
