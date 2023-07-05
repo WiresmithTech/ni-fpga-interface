@@ -23,7 +23,7 @@
 /**
  * The signature of the FPGA bitfile.
  */
-static const char* const NiFpga_Main_Signature = "728411ED7A6557687BCF28DB1D70ACF2";
+static const char* const NiFpga_Main_Signature = "E3E0C23C5F01C0DBA61D947AB8A8F489";
 
 #if NiFpga_Cpp
 extern "C"
@@ -40,6 +40,28 @@ typedef enum
    NiFpga_Main_ControlU8_U8Control = 0x18002,
    NiFpga_Main_ControlU8_U8Sum = 0x18006,
 } NiFpga_Main_ControlU8;
+
+typedef enum
+{
+   NiFpga_Main_IndicatorArrayU8_U8ResultArray = 0x1800C,
+} NiFpga_Main_IndicatorArrayU8;
+
+typedef enum
+{
+   NiFpga_Main_IndicatorArrayU8Size_U8ResultArray = 4,
+} NiFpga_Main_IndicatorArrayU8Size;
+
+typedef enum
+{
+   NiFpga_Main_ControlArrayU8_U8ControlArray = 0x18014,
+   NiFpga_Main_ControlArrayU8_U8SumArray = 0x18010,
+} NiFpga_Main_ControlArrayU8;
+
+typedef enum
+{
+   NiFpga_Main_ControlArrayU8Size_U8ControlArray = 4,
+   NiFpga_Main_ControlArrayU8Size_U8SumArray = 4,
+} NiFpga_Main_ControlArrayU8Size;
 
 
 #if NiFpga_Cpp

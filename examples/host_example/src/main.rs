@@ -10,7 +10,7 @@ extern "C" {
 
 fn main() {
     let bitfile = Path::new("../fpga_c_interface/NiFpga_Main.lvbitx");
-    let sig = "728411ED7A6557687BCF28DB1D70ACF2";
+    let sig = "E3E0C23C5F01C0DBA61D947AB8A8F489";
     let mut session =
         Session::new(bitfile.to_str().unwrap(), sig, "rio://192.168.10.17/RIO0").unwrap();
     //session.run().unwrap();
@@ -22,5 +22,9 @@ fn main() {
     input_1_reg.write(&session, 0x55).unwrap();
     let value = output_reg.read(&session).unwrap();
     println!("Value: {value}");
+
+    session.write_array(0x18014, &[1u8, 2, 3, 4]).unwrap();
+    let array: [u8; 4] = session.read_array(0x1800C).unwrap();
+    println!("Array: {:?}", array);
     session.close().unwrap();
 }
