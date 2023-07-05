@@ -1,3 +1,5 @@
+mod bindings_parser;
+
 use std::{
     env,
     path::{Path, PathBuf},
@@ -61,17 +63,34 @@ impl FpgaCInterface {
     }
 
     fn build_rust_interface(&self) {
+        let allow_string = format!("NiFpga_{}\\w*", self.interface_name);
         let bindings = bindgen::Builder::default()
             .header(self.custom_h.as_os_str().to_str().unwrap())
+            .allowlist_function(&allow_string)
+            .allowlist_type(&allow_string)
+            .allowlist_var(&allow_string)
             .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+            .default_enum_style(bindgen::EnumVariation::Rust {
+                non_exhaustive: false,
+            })
+            .prepend_enum_name(false)
             .generate()
             .expect("Unable to generate bindings");
 
         // Write the bindings to the $OUT_DIR/bindings.rs file.
         let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+        let bindings_file = out_path.join("bindings.rs");
+        let mod_path = out_path.join(format!("NiFpga_{}.rs", self.interface_name));
         bindings
-            .write_to_file(out_path.join("bindings.rs"))
+            .write_to_file(&bindings_file)
             .expect("Couldn't write bindings!");
+
+        let interface_description = bindings_parser::InterfaceDescription::parse_bindings(
+            &self.interface_name,
+            &std::fs::read_to_string(&bindings_file).unwrap(),
+        );
+
+        std::fs::write(&mod_path, interface_description.generate_rust_output()).unwrap();
     }
 }
 
