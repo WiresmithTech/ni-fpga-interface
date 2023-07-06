@@ -1,11 +1,9 @@
+use lang_c::ast::*;
+use lang_c::span::{Node, Span};
+use lang_c::visit::Visit;
 use std::collections::HashMap;
 
-use syn::{
-    token::Eq,
-    visit::{self, Visit},
-    Expr, ItemEnum,
-};
-
+/// The type of register value we have found.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 enum LocationKind {
     Control,
@@ -17,6 +15,7 @@ enum LocationKind {
 }
 
 impl LocationKind {
+    /// Returns if the kind is one of the array types.
     fn is_array(&self) -> bool {
         match self {
             LocationKind::ControlArray
@@ -27,6 +26,7 @@ impl LocationKind {
         }
     }
 
+    /// If it is an array type, it will return the size version of it.
     fn with_size(self) -> Self {
         match self {
             LocationKind::ControlArray => LocationKind::ControlArraySize,
@@ -35,6 +35,7 @@ impl LocationKind {
         }
     }
 
+    /// Convert the type to the naming prefix used in the C interface.
     const fn prefix(&self) -> &str {
         match self {
             LocationKind::Control => "Control",
@@ -47,6 +48,7 @@ impl LocationKind {
     }
 }
 
+/// Defines a register location.
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct LocationDefinition {
     kind: LocationKind,
@@ -54,16 +56,44 @@ pub struct LocationDefinition {
     datatype: String,
 }
 
+/// The set of registers that this visitor will return.
+pub type RegisterSet = HashMap<LocationDefinition, u32>;
+
+/// Extracts the register definitions from the AST.
 pub struct RegisterDefinitionsVisitor {
-    pub registers: HashMap<LocationDefinition, u32>,
+    pub registers: RegisterSet,
     prefix: String,
 }
 
 impl RegisterDefinitionsVisitor {
+    /// Create the new visitor with the FPGA project prefix.
+    ///
+    /// e.g. if the file is called `NiFpga_Main.h` then the prefix is Main.
     pub fn new(interface_name: &str) -> Self {
         Self {
             registers: HashMap::new(),
             prefix: format!("NiFpga_{interface_name}_"),
+        }
+    }
+
+    fn process_enum_type<'ast>(&mut self, node: &'ast EnumType, type_name: &str) {
+        let enum_name = type_name.strip_prefix(&self.prefix).unwrap();
+        let (kind, type_name) = enum_name_to_types(enum_name);
+
+        for Node { node: variant, .. } in node.enumerators.iter() {
+            let ident_string = &variant.identifier.node.name;
+            let name = control_indicator_name_from_full(ident_string);
+
+            let definition = LocationDefinition {
+                kind,
+                name: name.to_owned(),
+                datatype: type_name.to_owned(),
+            };
+
+            let assignment_express = &variant.expression.as_ref().unwrap().node;
+            let value = value_from_discriminant(&assignment_express);
+
+            self.registers.insert(definition, value);
         }
     }
 }
@@ -110,34 +140,65 @@ fn control_indicator_name_from_full(full_name: &str) -> &str {
     full_name.rsplit_once('_').unwrap().1
 }
 
-fn value_from_discriminant(discriminant: &(Eq, Expr)) -> u32 {
-    match &discriminant.1 {
-        Expr::Lit(lit) => match &lit.lit {
-            syn::Lit::Int(int) => int.base10_parse().unwrap(),
-            _ => panic!("Unexpected literal type"),
+/// Extract a numeric value from the expression for the enum value.
+fn value_from_discriminant(discriminant: &Expression) -> u32 {
+    match &discriminant {
+        Expression::Constant(node) => match &node.node {
+            Constant::Integer(value) => {
+                let radix = match value.base {
+                    IntegerBase::Decimal => 10,
+                    IntegerBase::Hexadecimal => 16,
+                    IntegerBase::Octal => 8,
+                    IntegerBase::Binary => 2,
+                };
+                u32::from_str_radix(&value.number, radix).unwrap()
+            }
+            _ => panic!("Unexpected constant type."),
         },
         _ => panic!("Unexpected expression type"),
     }
 }
 
+/// Check if the declaration is a typedef.
+fn is_typedef(node: &Declaration) -> bool {
+    for specifier in &node.specifiers {
+        match specifier.node {
+            DeclarationSpecifier::StorageClass(Node {
+                node: StorageClassSpecifier::Typedef,
+                ..
+            }) => return true,
+            _ => (),
+        }
+    }
+    return false;
+}
+
+/// Extract the name of a typedef declaration.
+///
+/// If we can find an identifier then we return none.
+fn get_typedef_name(node: &Declaration) -> Option<String> {
+    for declarator in node.declarators.iter() {
+        match &declarator.node.declarator.node.kind.node {
+            DeclaratorKind::Identifier(identifier) => return Some(identifier.node.name.clone()),
+            _ => (),
+        }
+    }
+    None
+}
+
 impl<'ast> Visit<'ast> for RegisterDefinitionsVisitor {
-    fn visit_item_enum(&mut self, node: &'ast ItemEnum) {
-        if let Some(enum_name) = &node.ident.to_string().strip_prefix(&self.prefix) {
-            let (kind, type_name) = enum_name_to_types(enum_name);
-
-            for variant in node.variants.iter() {
-                let ident_string = variant.ident.to_string();
-                let name = control_indicator_name_from_full(&ident_string);
-
-                let definition = LocationDefinition {
-                    kind,
-                    name: name.to_owned(),
-                    datatype: type_name.to_owned(),
-                };
-
-                let value = value_from_discriminant(variant.discriminant.as_ref().unwrap());
-
-                self.registers.insert(definition, value);
+    fn visit_declaration(&mut self, declaration: &'ast Declaration, _span: &'ast Span) {
+        if is_typedef(declaration) {
+            if let Some(name) = get_typedef_name(declaration) {
+                for specifier in declaration.specifiers.iter() {
+                    match &specifier.node {
+                        DeclarationSpecifier::TypeSpecifier(Node {
+                            node: TypeSpecifier::Enum(node),
+                            ..
+                        }) => self.process_enum_type(&node.node, &name),
+                        _ => (),
+                    }
+                }
             }
         }
     }
@@ -146,35 +207,39 @@ impl<'ast> Visit<'ast> for RegisterDefinitionsVisitor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lang_c::driver::{parse_preprocessed, Config};
+    use lang_c::visit::Visit;
+
+    fn visit_c_code(content: &str, visitor: &mut RegisterDefinitionsVisitor) {
+        let config = Config::default();
+        let file = parse_preprocessed(&config, content.to_owned()).unwrap();
+        visitor.visit_translation_unit(&file.unit);
+    }
 
     #[test]
     fn no_definitions_in_use() {
         let content = r#"
-        pub const NiFpga_Main_Bitfile: &[u8; 19] = b"NiFpga_Main.lvbitx\0";
-        #[doc = " The signature of the FPGA bitfile."]
-        pub const NiFpga_Main_Signature: &[u8; 33] = b"E3E0C23C5F01C0DBA61D947AB8A8F489\0";
+
+            static const char* const NiFpga_Main_Signature = "E3E0C23C5F01C0DBA61D947AB8A8F489";
+
         "#;
 
-        let file = syn::parse_file(content).unwrap();
         let mut visitor = RegisterDefinitionsVisitor::new("Main");
-        visitor.visit_file(&file);
-
+        visit_c_code(content, &mut visitor);
         assert_eq!(visitor.registers.len(), 0);
     }
 
     #[test]
     fn test_basic_control_definition() {
         let content = r#"
-            #[repr(i32)]
-            #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-            pub enum NiFpga_Main_ControlU8 {
-                NiFpga_Main_ControlU8_U8Control = 98306,
-            }
+        typedef enum
+        {
+        NiFpga_Main_ControlU8_U8Control = 0x18002,
+        } NiFpga_Main_ControlU8;
         "#;
 
-        let file = syn::parse_file(content).unwrap();
         let mut visitor = RegisterDefinitionsVisitor::new("Main");
-        visitor.visit_file(&file);
+        visit_c_code(content, &mut visitor);
 
         let expected = vec![(
             LocationDefinition {
@@ -193,16 +258,14 @@ mod tests {
     #[test]
     fn test_different_interface_name() {
         let content = r#"
-            #[repr(i32)]
-            #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-            pub enum NiFpga_If_ControlU8 {
-                NiFpga_If_ControlU8_U8Control = 98306,
-            }
+        typedef enum
+        {
+        NiFpga_If_ControlU8_U8Control = 0x18002,
+        } NiFpga_If_ControlU8;
         "#;
 
-        let file = syn::parse_file(content).unwrap();
         let mut visitor = RegisterDefinitionsVisitor::new("If");
-        visitor.visit_file(&file);
+        visit_c_code(content, &mut visitor);
 
         let expected = vec![(
             LocationDefinition {
@@ -221,16 +284,14 @@ mod tests {
     #[test]
     fn test_type_extraction() {
         let content = r#"
-            #[repr(i32)]
-            #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-            pub enum NiFpga_Main_ControlU32 {
-                NiFpga_Main_ControlU32_U8Control = 98306,
-            }
+        typedef enum
+        {
+        NiFpga_Main_ControlU32_U8Control = 0x18002,
+        } NiFpga_Main_ControlU32;
         "#;
 
-        let file = syn::parse_file(content).unwrap();
         let mut visitor = RegisterDefinitionsVisitor::new("Main");
-        visitor.visit_file(&file);
+        visit_c_code(content, &mut visitor);
 
         let expected = vec![(
             LocationDefinition {
@@ -249,17 +310,15 @@ mod tests {
     #[test]
     fn test_multiple_of_same_type() {
         let content = r#"
-            #[repr(i32)]
-            #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-            pub enum NiFpga_Main_ControlU8 {
-                NiFpga_Main_ControlU8_U8Control = 98306,
-                NiFpga_Main_ControlU8_U8Sum = 98310,
-            }
+            typedef enum
+            {
+            NiFpga_Main_ControlU8_U8Control = 0x18002,
+            NiFpga_Main_ControlU8_U8Sum = 0x18006,
+            } NiFpga_Main_ControlU8;
         "#;
 
-        let file = syn::parse_file(content).unwrap();
         let mut visitor = RegisterDefinitionsVisitor::new("Main");
-        visitor.visit_file(&file);
+        visit_c_code(content, &mut visitor);
 
         let expected = vec![
             (
@@ -288,16 +347,14 @@ mod tests {
     #[test]
     fn test_indicators() {
         let content = r#"
-            #[repr(i32)]
-            #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-            pub enum NiFpga_Main_IndicatorU8 {
-                NiFpga_Main_IndicatorU8_U8Result = 98314,
-            }
+        typedef enum
+        {
+           NiFpga_Main_IndicatorU8_U8Result = 0x1800A,
+        } NiFpga_Main_IndicatorU8;
         "#;
 
-        let file = syn::parse_file(content).unwrap();
         let mut visitor = RegisterDefinitionsVisitor::new("Main");
-        visitor.visit_file(&file);
+        visit_c_code(content, &mut visitor);
 
         let expected = vec![(
             LocationDefinition {
@@ -316,26 +373,21 @@ mod tests {
     #[test]
     fn test_control_arrays_multiple() {
         let content = r#"
-        #[repr(i32)]
-        #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-        pub enum NiFpga_Main_ControlArrayU8 {
-            NiFpga_Main_ControlArrayU8_U8ControlArray = 98324,
-            NiFpga_Main_ControlArrayU8_U8SumArray = 98320,
-        }
-        impl NiFpga_Main_ControlArrayU8Size {
-            pub const NiFpga_Main_ControlArrayU8Size_U8SumArray: NiFpga_Main_ControlArrayU8Size =
-                NiFpga_Main_ControlArrayU8Size::NiFpga_Main_ControlArrayU8Size_U8ControlArray;
-        }
-        #[repr(i32)]
-        #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-        pub enum NiFpga_Main_ControlArrayU8Size {
+            typedef enum
+            {
+            NiFpga_Main_ControlArrayU8_U8ControlArray = 0x18014,
+            NiFpga_Main_ControlArrayU8_U8SumArray = 0x18010,
+            } NiFpga_Main_ControlArrayU8;
+
+            typedef enum
+            {
             NiFpga_Main_ControlArrayU8Size_U8ControlArray = 4,
-        }
+            NiFpga_Main_ControlArrayU8Size_U8SumArray = 4,
+            } NiFpga_Main_ControlArrayU8Size;
         "#;
 
-        let file = syn::parse_file(content).unwrap();
         let mut visitor = RegisterDefinitionsVisitor::new("Main");
-        visitor.visit_file(&file);
+        visit_c_code(content, &mut visitor);
 
         let expected = vec![
             (
@@ -380,21 +432,20 @@ mod tests {
     #[test]
     fn test_indicator_arrays() {
         let content = r#"
-    #[repr(i32)]
-    #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-    pub enum NiFpga_Main_IndicatorArrayU8 {
-        NiFpga_Main_IndicatorArrayU8_U8ResultArray = 98316,
-    }
-    #[repr(i32)]
-    #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-    pub enum NiFpga_Main_IndicatorArrayU8Size {
-        NiFpga_Main_IndicatorArrayU8Size_U8ResultArray = 4,
-    }
+
+        typedef enum
+        {
+           NiFpga_Main_IndicatorArrayU8_U8ResultArray = 0x1800C,
+        } NiFpga_Main_IndicatorArrayU8;
+        
+        typedef enum
+        {
+           NiFpga_Main_IndicatorArrayU8Size_U8ResultArray = 4,
+        } NiFpga_Main_IndicatorArrayU8Size;
         "#;
 
-        let file = syn::parse_file(content).unwrap();
         let mut visitor = RegisterDefinitionsVisitor::new("Main");
-        visitor.visit_file(&file);
+        visit_c_code(content, &mut visitor);
 
         let expected = vec![
             (

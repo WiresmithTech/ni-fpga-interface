@@ -5,7 +5,7 @@ This crate is designed to make it easy to talk to a LabVIEW FPGA.
 
 ## Requirements
 
-* We need libclang from LLVM for bindgen to work. See https://rust-lang.github.io/rust-bindgen/requirements.html#windows
+* You need CLang installed and to be on the path for the C header pre-processing.
 * The C interface needs to be exported with the "prefix" set to something without spaces and we expect a single directory with the NiFpga C and H files.
 
 ## Examples

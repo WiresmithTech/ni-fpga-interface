@@ -1,21 +1,27 @@
 mod bindings_parser;
-mod byte_constant_visitor;
 mod register_definitions_visitor;
+mod string_constant_visitor;
 
 use std::{
     env,
     path::{Path, PathBuf},
 };
 
+/// Defines the generated C interface for the FPGA project.
 pub struct FpgaCInterface {
     common_c: PathBuf,
-    common_h: PathBuf,
     custom_h: PathBuf,
     custom_c: Option<PathBuf>,
     interface_name: String,
 }
 
 impl FpgaCInterface {
+    /// Constructs a new interface from the given custom header.
+    ///
+    /// This is the header file which includes the project specific prefix.
+    /// e.g. NiFpga_prefix.h not NiFpga.h.
+    ///
+    /// This finds the other files assuming they are in the same folder.
     pub fn from_custom_header(fpga_header: impl AsRef<Path>) -> Self {
         let fpga_header = fpga_header.as_ref();
         let fpga_header = fpga_header.to_owned();
@@ -30,7 +36,6 @@ impl FpgaCInterface {
             .to_owned();
 
         let common_c = interface_folder.join("NiFpga.c");
-        let common_h = interface_folder.join("NiFpga.h");
         let custom_c = interface_folder.join(format!("NiFpga_{}.c", interface_name));
 
         let custom_c = if custom_c.exists() {
@@ -41,13 +46,13 @@ impl FpgaCInterface {
 
         Self {
             common_c,
-            common_h,
             custom_h: fpga_header,
             custom_c,
             interface_name,
         }
     }
 
+    /// Build the C interface and generate rust bindings for it.
     pub fn build(&self) {
         self.build_lib();
         self.build_rust_interface();
@@ -65,28 +70,14 @@ impl FpgaCInterface {
     }
 
     fn build_rust_interface(&self) {
-        let allow_string = format!("NiFpga_{}\\w*", self.interface_name);
-        let bindings = bindgen::Builder::default()
-            .header(self.custom_h.as_os_str().to_str().unwrap())
-            .allowlist_function(&allow_string)
-            .allowlist_type(&allow_string)
-            .allowlist_var(&allow_string)
-            .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-            .prepend_enum_name(false)
-            .generate()
-            .expect("Unable to generate bindings");
-
         // Write the bindings to the $OUT_DIR/bindings.rs file.
         let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-        let bindings_file = out_path.join("bindings.rs");
         let mod_path = out_path.join(format!("NiFpga_{}.rs", self.interface_name));
-        bindings
-            .write_to_file(&bindings_file)
-            .expect("Couldn't write bindings!");
+        println!("cargo:rerun-if-changed={}", self.custom_h.display());
 
         let interface_description = bindings_parser::InterfaceDescription::parse_bindings(
             &self.interface_name,
-            &std::fs::read_to_string(&bindings_file).unwrap(),
+            &PathBuf::from(&self.custom_h),
         );
 
         std::fs::write(&mod_path, interface_description.generate_rust_output()).unwrap();
@@ -104,7 +95,6 @@ mod test {
         let fpga_header = "./NiFpga_fpga.h";
         let fpga_interface = FpgaCInterface::from_custom_header(fpga_header);
         assert_eq!(fpga_interface.common_c, PathBuf::from("./NiFpga.c"));
-        assert_eq!(fpga_interface.common_h, PathBuf::from("./NiFpga.h"));
         //this is none since it wont exist in test environment.
         assert_eq!(fpga_interface.custom_c, None);
         assert_eq!(fpga_interface.custom_h, PathBuf::from("./NiFpga_fpga.h"));
@@ -116,7 +106,6 @@ mod test {
         let fpga_header = "C:\\fpga\\NiFpga_fpga.h";
         let fpga_interface = FpgaCInterface::from_custom_header(fpga_header);
         assert_eq!(fpga_interface.common_c, PathBuf::from("C:\\fpga\\NiFpga.c"));
-        assert_eq!(fpga_interface.common_h, PathBuf::from("C:\\fpga\\NiFpga.h"));
         //this is none since it wont exist in test environment.
         assert_eq!(fpga_interface.custom_c, None);
         assert_eq!(
