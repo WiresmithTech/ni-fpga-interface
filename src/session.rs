@@ -83,4 +83,5 @@ impl Drop for Session {
             NiFpga_Close(self.handle, 0);
         }
     }
-} */
+}
+*/

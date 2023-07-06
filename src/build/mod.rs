@@ -1,4 +1,6 @@
 mod bindings_parser;
+mod byte_constant_visitor;
+mod register_definitions_visitor;
 
 use std::{
     env,
@@ -59,7 +61,7 @@ impl FpgaCInterface {
             build.file(custom_c);
         }
 
-        build.compile("fpga");
+        build.compile("ni_fpga");
     }
 
     fn build_rust_interface(&self) {
@@ -70,9 +72,6 @@ impl FpgaCInterface {
             .allowlist_type(&allow_string)
             .allowlist_var(&allow_string)
             .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-            .default_enum_style(bindgen::EnumVariation::Rust {
-                non_exhaustive: false,
-            })
             .prepend_enum_name(false)
             .generate()
             .expect("Unable to generate bindings");

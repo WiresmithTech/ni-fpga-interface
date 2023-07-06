@@ -2,6 +2,7 @@
 //!
 //! This is still in rough shape but seems to prove the basic concept.
 
+use super::byte_constant_visitor::ByteConstantVisitor;
 use std::ffi::CString;
 
 use quote::quote;
@@ -42,38 +43,6 @@ impl InterfaceDescription {
         })
         .unwrap();
         prettyplease::unparse(&file)
-    }
-}
-
-struct ByteConstantVisitor {
-    name: String,
-    value: Option<LitByteStr>,
-}
-
-impl ByteConstantVisitor {
-    fn new(prefix: &str, suffix: &str) -> Self {
-        Self {
-            name: format!("NiFpga_{prefix}_{suffix}"),
-            value: None,
-        }
-    }
-}
-
-impl<'ast> Visit<'ast> for ByteConstantVisitor {
-    fn visit_item_const(&mut self, node: &'ast syn::ItemConst) {
-        if node.ident == self.name {
-            match node.expr.as_ref() {
-                syn::Expr::Lit(ExprLit {
-                    attrs: _,
-                    lit: syn::Lit::ByteStr(lit_byte_str),
-                }) => {
-                    self.value = Some(lit_byte_str.clone());
-                }
-                _ => {
-                    Visit::visit_item_const(self, node);
-                }
-            }
-        }
     }
 }
 
