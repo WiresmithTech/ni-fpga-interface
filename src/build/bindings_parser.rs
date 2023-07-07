@@ -21,7 +21,10 @@ impl InterfaceDescription {
     /// Parses the C header file for the specific FPGA interface.
     pub fn parse_bindings(prefix: &str, content: &Path) -> Self {
         let new_path = header_to_temp_no_includes(content);
-        let config = Config::with_clang();
+        let mut config = Config::default();
+        //use cc to find the best compiler.
+        let build = cc::Build::new();
+        config.cpp_command = build.get_compiler().path().to_str().unwrap().to_owned();
         let file = parse(&config, new_path).unwrap().unit;
         read_ast(prefix, file)
     }
