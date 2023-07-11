@@ -3,12 +3,14 @@
 //! This is still in rough shape but seems to prove the basic concept.
 
 use super::register_definitions_visitor::RegisterDefinitionsVisitor;
+use super::registers_generator::generate_register_module;
 use super::{
     register_definitions_visitor::RegisterSet, string_constant_visitor::StringConstantVisitor,
 };
 use lang_c::driver::{parse, parse_preprocessed, Config};
+use lang_c::print;
 use lang_c::visit::Visit;
-use quote::quote;
+use quote::{quote, ToTokens, TokenStreamExt};
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
@@ -43,13 +45,23 @@ impl InterfaceDescription {
 
     /// Generates a new rust module which contains the interface to the FPGA.
     pub fn generate_rust_output(&self) -> String {
+        let metadata = self.generate_metadata_output();
+        let registers = generate_register_module(&self.registers);
+        let tokens = quote! {
+            #metadata
+            #registers
+        };
+        println!("{}", tokens.to_string());
+        let file = syn::parse2(tokens).unwrap();
+        prettyplease::unparse(&file)
+    }
+
+    fn generate_metadata_output(&self) -> impl ToTokens {
         let signature = &self.signature;
         let signature_length = signature.len();
-        let file = syn::parse2(quote! {
+        quote! {
             const SIGNATURE: [u8; #signature_length] = #signature;
-        })
-        .unwrap();
-        prettyplease::unparse(&file)
+        }
     }
 }
 

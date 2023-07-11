@@ -1,5 +1,6 @@
 mod bindings_parser;
 mod register_definitions_visitor;
+mod registers_generator;
 mod string_constant_visitor;
 
 use std::{

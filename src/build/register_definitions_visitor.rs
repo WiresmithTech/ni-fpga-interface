@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 /// The type of register value we have found.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-enum LocationKind {
+pub enum LocationKind {
     Control,
     Indicator,
     ControlArray,
@@ -27,7 +27,7 @@ impl LocationKind {
     }
 
     /// If it is an array type, it will return the size version of it.
-    fn with_size(self) -> Self {
+    pub fn with_size(self) -> Self {
         match self {
             LocationKind::ControlArray => LocationKind::ControlArraySize,
             LocationKind::IndicatorArray => LocationKind::IndicatorArraySize,
@@ -49,11 +49,11 @@ impl LocationKind {
 }
 
 /// Defines a register location.
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct LocationDefinition {
-    kind: LocationKind,
-    name: String,
-    datatype: String,
+    pub kind: LocationKind,
+    pub name: String,
+    pub datatype: String,
 }
 
 /// The set of registers that this visitor will return.

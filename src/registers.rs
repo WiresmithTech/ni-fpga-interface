@@ -37,6 +37,28 @@ impl<T: Default + Copy> Register<T> {
     }
 }
 
+pub struct ArrayRegister<T, const N: usize> {
+    address: RegisterAddress,
+    phantom_type: std::marker::PhantomData<T>,
+}
+
+impl<T: Default + Copy, const N: usize> ArrayRegister<T, N> {
+    pub fn new(address: RegisterAddress) -> Self {
+        Self {
+            address,
+            phantom_type: std::marker::PhantomData,
+        }
+    }
+
+    pub fn read(&self, session: &impl RegisterInterface<T>) -> Result<[T; N]> {
+        session.read_array(self.address)
+    }
+
+    pub fn write(&self, session: &impl RegisterInterface<T>, value: &[T; N]) -> Result<()> {
+        session.write_array(self.address, value)
+    }
+}
+
 pub trait RegisterInterface<T: Default + Copy> {
     fn read(&self, address: RegisterAddress) -> Result<T>;
     fn write(&self, address: RegisterAddress, data: T) -> Result<()>;
