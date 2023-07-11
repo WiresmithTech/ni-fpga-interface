@@ -27,6 +27,7 @@ impl InterfaceDescription {
         //use cc to find the best compiler.
         let build = cc::Build::new();
         config.cpp_command = build.get_compiler().path().to_str().unwrap().to_owned();
+        config.cpp_options = vec!["-EP".to_owned()];
         let file = parse(&config, new_path).unwrap().unit;
         read_ast(prefix, file)
     }
@@ -58,9 +59,8 @@ impl InterfaceDescription {
 
     fn generate_metadata_output(&self) -> impl ToTokens {
         let signature = &self.signature;
-        let signature_length = signature.len();
         quote! {
-            const SIGNATURE: [u8; #signature_length] = #signature;
+            pub const SIGNATURE: &str = #signature;
         }
     }
 }
@@ -95,6 +95,28 @@ fn header_to_temp_no_includes(header: &Path) -> PathBuf {
         .unwrap();
 
     let input = File::open(header).unwrap();
+
+    //write in a couple of definitions we will commonly need.
+    // making assumptions on short and char for the platform
+    // as I believe this to be true for Windows and Linux.
+    let common_types = r#"
+typedef unsigned char uint8_t;
+typedef short int16_t;
+typedef int int32_t;
+typedef unsigned int uint32_t;
+typedef unsigned long long uint64_t;
+typedef long long int64_t;
+typedef uint8_t NiFpga_Bool;
+
+typedef struct NiFpga_FxpTypeInfo
+{
+    NiFpga_Bool isSigned;
+    uint8_t wordLength;
+    int16_t integerWordLength;
+} NiFpga_FxpTypeInfo;
+
+"#;
+    output.write(common_types.as_bytes()).unwrap();
 
     for line in BufReader::new(input).lines() {
         let line = line.unwrap();

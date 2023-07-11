@@ -21,7 +21,7 @@ pub struct Register<T> {
 }
 
 impl<T: Default + Copy> Register<T> {
-    pub fn new(address: RegisterAddress) -> Self {
+    pub const fn new(address: RegisterAddress) -> Self {
         Self {
             address,
             phantom: std::marker::PhantomData,
@@ -43,7 +43,7 @@ pub struct ArrayRegister<T, const N: usize> {
 }
 
 impl<T: Default + Copy, const N: usize> ArrayRegister<T, N> {
-    pub fn new(address: RegisterAddress) -> Self {
+    pub const fn new(address: RegisterAddress) -> Self {
         Self {
             address,
             phantom_type: std::marker::PhantomData,

@@ -32,10 +32,27 @@ pub fn generate_register_module(registers: &RegisterSet) -> impl ToTokens {
         }
     }
     quote! {
+            #[allow(non_upper_case_globals)]
             pub mod registers {
             use ni_fpga_interface::registers::{ ArrayRegister, Register};
             #tokens
         }
+    }
+}
+
+fn type_string_to_type(type_string: &str) -> impl ToTokens {
+    match type_string {
+        "U8" => quote! {u8},
+        "U16" => quote! {u16},
+        "U32" => quote! {u32},
+        "U64" => quote! {u64},
+        "I8" => quote! {i8},
+        "I16" => quote! {i16},
+        "I32" => quote! {i32},
+        "I64" => quote! {i64},
+        "Sgl" => quote! {f32},
+        "Dbl" => quote! {f64},
+        _ => panic!("Unknown type {}", type_string),
     }
 }
 
@@ -53,7 +70,7 @@ fn generate_register_definition(
     array_size: Option<u32>,
 ) -> impl ToTokens {
     let name = format_ident!("{}", definition.name);
-    let ty = format_ident!("{}", definition.datatype.to_ascii_lowercase());
+    let ty = type_string_to_type(&definition.datatype);
     let address = TokenStream::from_str(&format!("0x{:X}", address)).unwrap();
 
     match definition.kind {
@@ -66,7 +83,7 @@ fn generate_register_definition(
             let array_size = array_size.expect("Need size to generate an array register.");
             let array_size = TokenStream::from_str(&format!("{array_size}")).unwrap();
             quote! {
-                pub const #name: ArrayRegister<#ty, #array_size> = Register::new(#address);
+                pub const #name: ArrayRegister<#ty, #array_size> = ArrayRegister::new(#address);
             }
         }
         LocationKind::ControlArraySize | LocationKind::IndicatorArraySize => {
@@ -118,6 +135,44 @@ mod tests {
     }
 
     #[test]
+    fn test_generate_control_register_f32() {
+        let definition = LocationDefinition {
+            name: "control".to_string(),
+            datatype: "Sgl".to_string(),
+            kind: LocationKind::Control,
+        };
+
+        let address = 0x1800A;
+
+        let tokens = generate_register_definition(&definition, address, None);
+
+        let expected = quote! {
+            pub const control: Register<f32> = Register::new(0x1800A);
+        };
+
+        assert_eq!(tokens.to_token_stream().to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_generate_control_register_f64() {
+        let definition = LocationDefinition {
+            name: "control".to_string(),
+            datatype: "Dbl".to_string(),
+            kind: LocationKind::Control,
+        };
+
+        let address = 0x1800A;
+
+        let tokens = generate_register_definition(&definition, address, None);
+
+        let expected = quote! {
+            pub const control: Register<f64> = Register::new(0x1800A);
+        };
+
+        assert_eq!(tokens.to_token_stream().to_string(), expected.to_string());
+    }
+
+    #[test]
     fn test_generate_control_array_register() {
         let definition = LocationDefinition {
             name: "control".to_string(),
@@ -130,7 +185,7 @@ mod tests {
         let tokens = generate_register_definition(&definition, address, Some(5));
 
         let expected = quote! {
-            pub const control: ArrayRegister<u8, 5> = Register::new(0x1800A);
+            pub const control: ArrayRegister<u8, 5> = ArrayRegister::new(0x1800A);
         };
 
         assert_eq!(tokens.to_token_stream().to_string(), expected.to_string());
@@ -149,7 +204,7 @@ mod tests {
         let tokens = generate_register_definition(&definition, address, Some(3));
 
         let expected = quote! {
-            pub const indicator: ArrayRegister<i64, 3> = Register::new(0x1802A);
+            pub const indicator: ArrayRegister<i64, 3> = ArrayRegister::new(0x1802A);
         };
 
         assert_eq!(tokens.to_token_stream().to_string(), expected.to_string());
@@ -169,7 +224,7 @@ mod tests {
         let tokens = generate_register_definition(&definition, address, Some(5));
 
         let expected = quote! {
-            pub const CONTROL: ArrayRegister<u8; 5> = Register::new(0x1800A);
+            pub const CONTROL: ArrayRegister<u8; 5> = ArrayRegister::new(0x1800A);
         };
 
         assert!(tokens.to_token_stream().is_empty());
@@ -205,6 +260,7 @@ mod tests {
         let tokens = generate_register_module(&registers);
 
         let expected = quote! {
+            #[allow(non_upper_case_globals)]
             pub mod registers {
                 use ni_fpga_interface::registers::{ ArrayRegister, Register};
 
@@ -238,10 +294,11 @@ mod tests {
         let tokens = generate_register_module(&registers);
 
         let expected = quote! {
+            #[allow(non_upper_case_globals)]
             pub mod registers {
                 use ni_fpga_interface::registers::{ ArrayRegister, Register};
 
-                pub const control: ArrayRegister<u8, 5> = Register::new(0x1800A);
+                pub const control: ArrayRegister<u8, 5> = ArrayRegister::new(0x1800A);
             }
         };
 
