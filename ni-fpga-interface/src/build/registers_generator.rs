@@ -31,6 +31,9 @@ pub fn generate_register_module(registers: &RegisterSet) -> impl ToTokens {
             }
         }
     }
+
+    // Seeing as we can't control the input naming conventions we allow non-upper-case.
+    // probably we could assume Camel Case and convert but I bet that isn't very consistent.
     quote! {
             #[allow(non_upper_case_globals)]
             pub mod registers {
