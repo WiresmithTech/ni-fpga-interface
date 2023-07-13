@@ -9,4 +9,4 @@ edition = "2021"
 ni-fpga-interface = { path = "../../ni-fpga-interface"}
 
 [build-dependencies]
-ni-fpga-interface = { path = "../../ni-fpga-interface"}
+ni-fpga-interface-build = { path = "../../ni-fpga-interface-build"}

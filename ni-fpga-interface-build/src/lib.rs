@@ -89,7 +89,7 @@ impl FpgaCInterface {
 mod test {
     use std::path::PathBuf;
 
-    use crate::build::FpgaCInterface;
+    use crate::FpgaCInterface;
 
     #[test]
     fn test_constructs_from_custom_header_relative_path() {

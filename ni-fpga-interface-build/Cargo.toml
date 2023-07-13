@@ -1,5 +1,5 @@
 [package]
-name = "ni-fpga-interface"
+name = "ni-fpga-interface-build"
 version.workspace = true
 edition.workspace = true
 description.workspace = true
@@ -11,5 +11,10 @@ readme.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-paste = "1.0"
+cc = "1.0"
 libc = "0.2"
+syn = { version = "2.0", features = ["visit", "parsing"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+prettyplease = "0.2"
+lang-c = "0.15"

@@ -34,11 +34,8 @@ impl Session {
         resource: &str,
     ) -> Result<Self, crate::error::FPGAError> {
         LIB_INIT.call_once(|| unsafe {
-            //NiFpga_Initialize();
-        });
-        unsafe {
             NiFpga_Initialize();
-        }
+        });
 
         let mut handle: SessionHandle = 0;
         let bitfile = std::ffi::CString::new(bitfile).unwrap();
@@ -76,7 +73,6 @@ impl Session {
     }
 }
 
-/*/
 impl Drop for Session {
     fn drop(&mut self) {
         unsafe {
@@ -84,4 +80,3 @@ impl Drop for Session {
         }
     }
 }
-*/

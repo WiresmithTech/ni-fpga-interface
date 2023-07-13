@@ -1,6 +1,5 @@
 //! Implements the register interfaces to the FPGA.
 //!
-#![feature(repr_transparent)]
 use crate::error::{to_fpga_result, NiFpga_Status, Result};
 use crate::session::{Session, SessionHandle};
 use libc::size_t;
