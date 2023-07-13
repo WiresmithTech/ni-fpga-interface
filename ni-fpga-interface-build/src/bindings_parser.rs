@@ -8,9 +8,8 @@ use super::{
     register_definitions_visitor::RegisterSet, string_constant_visitor::StringConstantVisitor,
 };
 use lang_c::driver::{parse, parse_preprocessed, Config};
-use lang_c::print;
 use lang_c::visit::Visit;
-use quote::{quote, ToTokens, TokenStreamExt};
+use quote::{quote, ToTokens};
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 

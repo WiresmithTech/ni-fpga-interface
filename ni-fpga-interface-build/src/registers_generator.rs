@@ -36,6 +36,7 @@ pub fn generate_register_module(registers: &RegisterSet) -> impl ToTokens {
     // probably we could assume Camel Case and convert but I bet that isn't very consistent.
     quote! {
             #[allow(non_upper_case_globals)]
+            #[allow(dead_code)]
             pub mod registers {
             use ni_fpga_interface::registers::{ ArrayRegister, Register};
             #tokens
@@ -226,10 +227,6 @@ mod tests {
 
         let tokens = generate_register_definition(&definition, address, Some(5));
 
-        let expected = quote! {
-            pub const CONTROL: ArrayRegister<u8; 5> = ArrayRegister::new(0x1800A);
-        };
-
         assert!(tokens.to_token_stream().is_empty());
     }
 
@@ -264,6 +261,7 @@ mod tests {
 
         let expected = quote! {
             #[allow(non_upper_case_globals)]
+            #[allow(dead_code)]
             pub mod registers {
                 use ni_fpga_interface::registers::{ ArrayRegister, Register};
 
@@ -298,6 +296,7 @@ mod tests {
 
         let expected = quote! {
             #[allow(non_upper_case_globals)]
+            #[allow(dead_code)]
             pub mod registers {
                 use ni_fpga_interface::registers::{ ArrayRegister, Register};
 

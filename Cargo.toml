@@ -1,6 +1,6 @@
 [workspace]
 
-members = ["ni-fpga-interface", "examples/host_example"]
+members = ["ni-fpga-interface", "ni-fpga-interface-build", "examples/host_example"]
 
 [workspace.package]
 version = "0.1.0"
