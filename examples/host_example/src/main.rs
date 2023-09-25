@@ -1,12 +1,5 @@
-use ni_fpga_interface::{
-    registers::{Register, RegisterInterface},
-    session::Session,
-};
+use ni_fpga_interface::session::Session;
 use std::path::Path;
-
-extern "C" {
-    fn NiFpga_Initialize() -> i32;
-}
 
 mod fpga_defs {
     include!(concat!(env!("OUT_DIR"), "/NiFpga_Main.rs"));
@@ -14,7 +7,7 @@ mod fpga_defs {
 
 fn main() {
     let bitfile = Path::new("../fpga_c_interface/NiFpga_Main.lvbitx");
-    let mut session = Session::new(
+    let session = Session::new(
         bitfile.to_str().unwrap(),
         fpga_defs::SIGNATURE,
         "rio://192.168.10.17/RIO0",

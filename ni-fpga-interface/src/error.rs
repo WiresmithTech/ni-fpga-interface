@@ -1,6 +1,6 @@
 //! Error support for the FPGA Interface.
 
-pub type NiFpga_Status = i32;
+pub type NiFpgaStatus = i32;
 
 #[derive(Debug)]
 pub enum FPGAError {

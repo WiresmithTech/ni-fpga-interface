@@ -2,7 +2,7 @@
 //!
 use std::sync::Once;
 
-use crate::error::{to_fpga_result, NiFpga_Status};
+use crate::error::{to_fpga_result, NiFpgaStatus};
 
 static LIB_INIT: Once = Once::new();
 
@@ -15,10 +15,10 @@ extern "C" {
         resource: *const i8,
         attribute: u32,
         session: *mut SessionHandle,
-    ) -> NiFpga_Status;
-    fn NiFpga_Reset(session: SessionHandle) -> NiFpga_Status;
-    fn NiFpga_Run(session: SessionHandle) -> NiFpga_Status;
-    fn NiFpga_Close(session: SessionHandle, attribute: u32) -> NiFpga_Status;
+    ) -> NiFpgaStatus;
+    fn NiFpga_Reset(session: SessionHandle) -> NiFpgaStatus;
+    fn NiFpga_Run(session: SessionHandle) -> NiFpgaStatus;
+    fn NiFpga_Close(session: SessionHandle, attribute: u32) -> NiFpgaStatus;
 }
 
 pub type SessionHandle = u32;
@@ -69,7 +69,7 @@ impl Session {
     pub fn close(self) -> Result<(), crate::error::FPGAError> {
         let result = unsafe { NiFpga_Close(self.handle, 0) };
 
-        to_fpga_result((), 0)
+        to_fpga_result((), result)
     }
 }
 
