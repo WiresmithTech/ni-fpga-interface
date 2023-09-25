@@ -1,52 +1,10 @@
+use crate::register_definitions::value_from_discriminant;
+
+use super::register_definitions::LocationKind;
 use lang_c::ast::*;
 use lang_c::span::{Node, Span};
 use lang_c::visit::Visit;
 use std::collections::HashMap;
-
-/// The type of register value we have found.
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-pub enum LocationKind {
-    Control,
-    Indicator,
-    ControlArray,
-    IndicatorArray,
-    ControlArraySize,
-    IndicatorArraySize,
-}
-
-impl LocationKind {
-    /// Returns if the kind is one of the array types.
-    fn is_array(&self) -> bool {
-        match self {
-            LocationKind::ControlArray
-            | LocationKind::IndicatorArray
-            | LocationKind::ControlArraySize
-            | LocationKind::IndicatorArraySize => true,
-            _ => false,
-        }
-    }
-
-    /// If it is an array type, it will return the size version of it.
-    pub fn with_size(self) -> Self {
-        match self {
-            LocationKind::ControlArray => LocationKind::ControlArraySize,
-            LocationKind::IndicatorArray => LocationKind::IndicatorArraySize,
-            _ => self,
-        }
-    }
-
-    /// Convert the type to the naming prefix used in the C interface.
-    const fn prefix(&self) -> &str {
-        match self {
-            LocationKind::Control => "Control",
-            LocationKind::Indicator => "Indicator",
-            LocationKind::ControlArray => "ControlArray",
-            LocationKind::IndicatorArray => "IndicatorArray",
-            LocationKind::ControlArraySize => "ControlArray",
-            LocationKind::IndicatorArraySize => "IndicatorArray",
-        }
-    }
-}
 
 /// Defines a register location.
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -138,25 +96,6 @@ fn extract_type_from_start(name: &str) -> Option<LocationKind> {
 /// the text after the last '_' in the name.
 fn control_indicator_name_from_full(full_name: &str) -> &str {
     full_name.rsplit_once('_').unwrap().1
-}
-
-/// Extract a numeric value from the expression for the enum value.
-fn value_from_discriminant(discriminant: &Expression) -> u32 {
-    match &discriminant {
-        Expression::Constant(node) => match &node.node {
-            Constant::Integer(value) => {
-                let radix = match value.base {
-                    IntegerBase::Decimal => 10,
-                    IntegerBase::Hexadecimal => 16,
-                    IntegerBase::Octal => 8,
-                    IntegerBase::Binary => 2,
-                };
-                u32::from_str_radix(&value.number, radix).unwrap()
-            }
-            _ => panic!("Unexpected constant type."),
-        },
-        _ => panic!("Unexpected expression type"),
-    }
 }
 
 /// Check if the declaration is a typedef.

@@ -1,4 +1,6 @@
 mod bindings_parser;
+mod custom_type_register_visitor;
+mod register_definitions;
 mod register_definitions_visitor;
 mod registers_generator;
 mod string_constant_visitor;

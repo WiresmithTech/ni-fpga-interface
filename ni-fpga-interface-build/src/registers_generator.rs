@@ -1,4 +1,5 @@
-use super::register_definitions_visitor::{LocationDefinition, LocationKind, RegisterSet};
+use super::register_definitions::LocationKind;
+use super::register_definitions_visitor::{LocationDefinition, RegisterSet};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens, TokenStreamExt};
 use std::str::FromStr;
