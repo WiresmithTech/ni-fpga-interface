@@ -3,7 +3,7 @@
 //! This is still in rough shape but seems to prove the basic concept.
 
 use super::address_definitions_visitor::AddressDefinitionsVisitor;
-use super::registers_generator::generate_register_module;
+use super::registers_generator::{generate_fifo_module, generate_register_module};
 use super::{
     address_definitions_visitor::AddressSet, string_constant_visitor::StringConstantVisitor,
 };
@@ -47,9 +47,11 @@ impl InterfaceDescription {
     pub fn generate_rust_output(&self) -> String {
         let metadata = self.generate_metadata_output();
         let registers = generate_register_module(&self.registers);
+        let fifos = generate_fifo_module(&self.registers);
         let tokens = quote! {
             #metadata
             #registers
+            #fifos
         };
         println!("{}", tokens.to_string());
         let file = syn::parse2(tokens).unwrap();

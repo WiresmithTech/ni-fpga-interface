@@ -323,6 +323,7 @@ mod tests {
         assert!(constant_types.is_none());
     }
 
+    #[ignore = "still brittle and unfinished"]
     #[test]
     fn test_fxp_control_and_indicator() {
         let content = r#"

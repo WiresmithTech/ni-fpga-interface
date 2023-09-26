@@ -81,6 +81,8 @@ fn extract_type_from_start(name: &str) -> Option<AddressKind> {
         AddressKind::IndicatorArray,
         AddressKind::Control,
         AddressKind::Indicator,
+        AddressKind::TargetToHostFifo,
+        AddressKind::HostToTargetFifo,
     ];
 
     for kind in options {
@@ -402,6 +404,80 @@ mod tests {
                     datatype: "U8".to_owned(),
                 },
                 4,
+            ),
+        ];
+
+        for (key, value) in expected {
+            assert_eq!(visitor.registers.get(&key).unwrap(), &value);
+        }
+    }
+
+    #[test]
+    fn test_host_to_target_fifo_definition() {
+        let content = r#"
+        typedef enum
+        {
+        NiFpga_Main_HostToTargetFifoU8_First = 0,
+        NiFpga_Main_HostToTargetFifoU8_Second = 1,
+        } NiFpga_Main_HostToTargetFifoU8;
+        "#;
+
+        let mut visitor = AddressDefinitionsVisitor::new("Main");
+        visit_c_code(content, &mut visitor);
+
+        let expected = vec![
+            (
+                LocationDefinition {
+                    kind: AddressKind::HostToTargetFifo,
+                    name: "First".to_owned(),
+                    datatype: "U8".to_owned(),
+                },
+                0,
+            ),
+            (
+                LocationDefinition {
+                    kind: AddressKind::HostToTargetFifo,
+                    name: "Second".to_owned(),
+                    datatype: "U8".to_owned(),
+                },
+                1,
+            ),
+        ];
+
+        for (key, value) in expected {
+            assert_eq!(visitor.registers.get(&key).unwrap(), &value);
+        }
+    }
+
+    #[test]
+    fn test_target_to_host_fifo_definition() {
+        let content = r#"
+        typedef enum
+        {
+        NiFpga_Main_TargetToHostFifoU16_First = 0,
+        NiFpga_Main_TargetToHostFifoU16_Second = 1,
+        } NiFpga_Main_TargetToHostFifoU16;
+        "#;
+
+        let mut visitor = AddressDefinitionsVisitor::new("Main");
+        visit_c_code(content, &mut visitor);
+
+        let expected = vec![
+            (
+                LocationDefinition {
+                    kind: AddressKind::TargetToHostFifo,
+                    name: "First".to_owned(),
+                    datatype: "U16".to_owned(),
+                },
+                0,
+            ),
+            (
+                LocationDefinition {
+                    kind: AddressKind::TargetToHostFifo,
+                    name: "Second".to_owned(),
+                    datatype: "U16".to_owned(),
+                },
+                1,
             ),
         ];
 

@@ -13,7 +13,7 @@ pub fn generate_register_module(registers: &AddressSet) -> impl ToTokens {
     for (def, address) in registers {
         match def.kind {
             AddressKind::Control | AddressKind::Indicator => {
-                let register = generate_register_definition(def, *address, None);
+                let register = generate_address_definition(def, *address, None);
                 tokens.append_all(quote! {
                     #register
                 });
@@ -22,12 +22,15 @@ pub fn generate_register_module(registers: &AddressSet) -> impl ToTokens {
                 let mut size_def = def.clone();
                 size_def.kind = def.kind.with_size();
                 let array_size = registers.get(&size_def).expect("Array size not found.");
-                let register = generate_register_definition(def, *address, Some(*array_size));
+                let register = generate_address_definition(def, *address, Some(*array_size));
                 tokens.append_all(quote! {
                     #register
                 });
             }
             AddressKind::ControlArraySize | AddressKind::IndicatorArraySize => {
+                continue;
+            }
+            AddressKind::HostToTargetFifo | AddressKind::TargetToHostFifo => {
                 continue;
             }
         }
@@ -40,6 +43,36 @@ pub fn generate_register_module(registers: &AddressSet) -> impl ToTokens {
             #[allow(dead_code)]
             pub mod registers {
             use ni_fpga_interface::registers::{ ArrayRegister, Register};
+
+            #tokens
+        }
+    }
+}
+
+/// Generate a seperate module with the FIFO definitions.
+pub fn generate_fifo_module(addresses: &AddressSet) -> impl ToTokens {
+    let mut tokens = quote! {};
+    for (def, address) in addresses {
+        match def.kind {
+            AddressKind::HostToTargetFifo | AddressKind::TargetToHostFifo => {
+                let register = generate_address_definition(def, *address, None);
+                tokens.append_all(quote! {
+                    #register
+                });
+            }
+            _ => {
+                continue;
+            }
+        }
+    }
+
+    // Seeing as we can't control the input naming conventions we allow non-upper-case.
+    // probably we could assume Camel Case and convert but I bet that isn't very consistent.
+    quote! {
+            #[allow(non_upper_case_globals)]
+            #[allow(dead_code)]
+            pub mod fifos {
+            use ni_fpga_interface::fifos::{ ReadFifo, WriteFifo };
             #tokens
         }
     }
@@ -69,7 +102,7 @@ fn type_string_to_type(type_string: &str) -> impl ToTokens {
 ///
 /// If you pass an array size type then nothing is generated as this should be folded into the array register
 /// at a higher level.
-fn generate_register_definition(
+fn generate_address_definition(
     definition: &LocationDefinition,
     address: u32,
     array_size: Option<u32>,
@@ -94,6 +127,16 @@ fn generate_register_definition(
         AddressKind::ControlArraySize | AddressKind::IndicatorArraySize => {
             quote! {}
         }
+        AddressKind::HostToTargetFifo => {
+            quote! {
+                pub const #name: WriteFifo<#ty> = WriteFifo::new(#address);
+            }
+        }
+        AddressKind::TargetToHostFifo => {
+            quote! {
+                pub const #name: ReadFifo<#ty> = ReadFifo::new(#address);
+            }
+        }
     }
 }
 
@@ -111,7 +154,7 @@ mod tests {
 
         let address = 0x1800A;
 
-        let tokens = generate_register_definition(&definition, address, None);
+        let tokens = generate_address_definition(&definition, address, None);
 
         let expected = quote! {
             pub const control: Register<u8> = Register::new(0x1800A);
@@ -130,7 +173,7 @@ mod tests {
 
         let address = 0x1802A;
 
-        let tokens = generate_register_definition(&definition, address, None);
+        let tokens = generate_address_definition(&definition, address, None);
 
         let expected = quote! {
             pub const indicator: Register<i64> = Register::new(0x1802A);
@@ -149,7 +192,7 @@ mod tests {
 
         let address = 0x1800A;
 
-        let tokens = generate_register_definition(&definition, address, None);
+        let tokens = generate_address_definition(&definition, address, None);
 
         let expected = quote! {
             pub const control: Register<f32> = Register::new(0x1800A);
@@ -168,7 +211,7 @@ mod tests {
 
         let address = 0x1800A;
 
-        let tokens = generate_register_definition(&definition, address, None);
+        let tokens = generate_address_definition(&definition, address, None);
 
         let expected = quote! {
             pub const control: Register<f64> = Register::new(0x1800A);
@@ -187,7 +230,7 @@ mod tests {
 
         let address = 0x1800A;
 
-        let tokens = generate_register_definition(&definition, address, Some(5));
+        let tokens = generate_address_definition(&definition, address, Some(5));
 
         let expected = quote! {
             pub const control: ArrayRegister<u8, 5> = ArrayRegister::new(0x1800A);
@@ -206,7 +249,7 @@ mod tests {
 
         let address = 0x1802A;
 
-        let tokens = generate_register_definition(&definition, address, Some(3));
+        let tokens = generate_address_definition(&definition, address, Some(3));
 
         let expected = quote! {
             pub const indicator: ArrayRegister<i64, 3> = ArrayRegister::new(0x1802A);
@@ -226,7 +269,7 @@ mod tests {
 
         let address = 0x1800A;
 
-        let tokens = generate_register_definition(&definition, address, Some(5));
+        let tokens = generate_address_definition(&definition, address, Some(5));
 
         assert!(tokens.to_token_stream().is_empty());
     }
@@ -241,7 +284,7 @@ mod tests {
 
         let address = 0x1802A;
 
-        let tokens = generate_register_definition(&definition, address, Some(3));
+        let tokens = generate_address_definition(&definition, address, Some(3));
 
         assert!(tokens.to_token_stream().is_empty());
     }
@@ -256,6 +299,41 @@ mod tests {
                 kind: AddressKind::Control,
             },
             0x1800A,
+        );
+
+        let tokens = generate_register_module(&registers);
+
+        let expected = quote! {
+            #[allow(non_upper_case_globals)]
+            #[allow(dead_code)]
+            pub mod registers {
+                use ni_fpga_interface::registers::{ ArrayRegister, Register};
+
+                pub const control: Register<u8> = Register::new(0x1800A);
+            }
+        };
+
+        assert_eq!(tokens.to_token_stream().to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_should_not_include_fifos_in_register_module() {
+        let mut registers = AddressSet::new();
+        registers.insert(
+            LocationDefinition {
+                name: "control".to_string(),
+                datatype: "U8".to_string(),
+                kind: AddressKind::Control,
+            },
+            0x1800A,
+        );
+        registers.insert(
+            LocationDefinition {
+                name: "to_fpga".to_string(),
+                datatype: "U8".to_string(),
+                kind: AddressKind::HostToTargetFifo,
+            },
+            0x01,
         );
 
         let tokens = generate_register_module(&registers);
@@ -302,6 +380,50 @@ mod tests {
                 use ni_fpga_interface::registers::{ ArrayRegister, Register};
 
                 pub const control: ArrayRegister<u8, 5> = ArrayRegister::new(0x1800A);
+            }
+        };
+
+        assert_eq!(tokens.to_token_stream().to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_should_generate_a_public_module_with_fifos() {
+        let mut registers = AddressSet::new();
+        registers.insert(
+            LocationDefinition {
+                name: "to_fpga".to_string(),
+                datatype: "U8".to_string(),
+                kind: AddressKind::HostToTargetFifo,
+            },
+            0x01,
+        );
+        registers.insert(
+            LocationDefinition {
+                name: "from_fpga".to_string(),
+                datatype: "Sgl".to_string(),
+                kind: AddressKind::TargetToHostFifo,
+            },
+            0x02,
+        );
+        registers.insert(
+            LocationDefinition {
+                name: "control".to_string(),
+                datatype: "U8".to_string(),
+                kind: AddressKind::Control,
+            },
+            0x1800A,
+        );
+
+        let tokens = generate_fifo_module(&registers);
+
+        let expected = quote! {
+            #[allow(non_upper_case_globals)]
+            #[allow(dead_code)]
+            pub mod fifos {
+                use ni_fpga_interface::fifos::{ ReadFifo, WriteFifo };
+
+                pub const to_fpga: WriteFifo<u8> = WriteFifo::new(0x1);
+                pub const from_fpga: ReadFifo<f32> = ReadFifo::new(0x2);
             }
         };
 

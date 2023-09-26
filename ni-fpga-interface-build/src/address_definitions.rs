@@ -12,6 +12,8 @@ pub enum AddressKind {
     IndicatorArray,
     ControlArraySize,
     IndicatorArraySize,
+    TargetToHostFifo,
+    HostToTargetFifo,
 }
 
 impl AddressKind {
@@ -44,6 +46,8 @@ impl AddressKind {
             AddressKind::IndicatorArray => "IndicatorArray",
             AddressKind::ControlArraySize => "ControlArray",
             AddressKind::IndicatorArraySize => "IndicatorArray",
+            AddressKind::TargetToHostFifo => "TargetToHostFifo",
+            AddressKind::HostToTargetFifo => "HostToTargetFifo",
         }
     }
 }
