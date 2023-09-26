@@ -13,3 +13,8 @@ readme.workspace = true
 [dependencies]
 paste = "1.0"
 libc = "0.2"
+
+
+[lib]
+# Cant run doc tests as we depend on the linked libraries from the builder.
+doctest = false

@@ -1,5 +1,8 @@
-use ni_fpga_interface::session::Session;
-use std::path::Path;
+use ni_fpga_interface::{
+    irq::{self, IRQ0},
+    session::Session,
+};
+use std::{path::Path, time::Duration};
 
 mod fpga_defs {
     include!(concat!(env!("OUT_DIR"), "/NiFpga_Main.rs"));
@@ -28,5 +31,24 @@ fn main() {
     output_array.write(&session, &[1u8, 2, 3, 4]).unwrap();
     let array: [u8; 4] = input_array.read(&session).unwrap();
     println!("Array: {:?}", array);
-    session.close().unwrap();
+
+    //Test IRQs.
+    let mut irq_context = session.create_irq_context().unwrap();
+    let irq_count_reg = fpga_defs::registers::IRQs;
+    let acks = 0;
+
+    let result = irq_context
+        .wait_on_irq(IRQ0, Duration::from_millis(1000))
+        .unwrap();
+    match result {
+        irq::IrqWaitResult::TimedOut => println!("IRQ Timed Out"),
+        irq::IrqWaitResult::IrqsAsserted(irqs) => {
+            println!("IRQs Asserted: {:?}", irqs);
+            assert!(irq_count_reg.read(&session).unwrap() == 0);
+            session.acknowledge_irqs(IRQ0).unwrap();
+            assert!(irq_count_reg.read(&session).unwrap() == 1);
+        }
+    }
+
+    //session.close().unwrap();
 }

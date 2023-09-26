@@ -4,12 +4,9 @@ use super::{RegisterAddress, RegisterInterface};
 use crate::error::NiFpgaStatus;
 use crate::error::{to_fpga_result, Result};
 use crate::session::{Session, SessionHandle};
+use crate::types::FpgaBool;
 use libc::size_t;
 use paste::paste;
-
-#[repr(transparent)]
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct FpgaBool(u8);
 
 /// First entry is the rust type, second is the text used for that type in the FPGA interface.
 macro_rules! impl_register_interface {
