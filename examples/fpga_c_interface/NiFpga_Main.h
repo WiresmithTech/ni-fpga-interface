@@ -23,7 +23,7 @@
 /**
  * The signature of the FPGA bitfile.
  */
-static const char* const NiFpga_Main_Signature = "08AE65379344E9228BDC64590F8A4D25";
+static const char* const NiFpga_Main_Signature = "A0613989B20F45FC6E79EB71383493E8";
 
 #if NiFpga_Cpp
 extern "C"
@@ -100,6 +100,16 @@ typedef enum
    NiFpga_Main_ControlArraySglSize_SglControlArray = 4,
    NiFpga_Main_ControlArraySglSize_SglSumArray = 4,
 } NiFpga_Main_ControlArraySglSize;
+
+typedef enum
+{
+   NiFpga_Main_TargetToHostFifoU16_NumbersFromFPGA = 1,
+} NiFpga_Main_TargetToHostFifoU16;
+
+typedef enum
+{
+   NiFpga_Main_HostToTargetFifoU32_NumbersToFPGA = 0,
+} NiFpga_Main_HostToTargetFifoU32;
 
 #if !NiFpga_VxWorks
 
