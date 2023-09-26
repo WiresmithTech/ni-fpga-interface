@@ -29,7 +29,7 @@ use lang_c::{
     visit::Visit,
 };
 
-use crate::register_definitions::value_from_discriminant;
+use crate::address_definitions::value_from_discriminant;
 
 #[derive(Debug, Error)]
 pub enum CustomTypeVisitorError {

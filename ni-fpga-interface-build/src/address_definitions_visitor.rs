@@ -1,6 +1,6 @@
-use crate::register_definitions::value_from_discriminant;
+use crate::address_definitions::value_from_discriminant;
 
-use super::register_definitions::LocationKind;
+use super::address_definitions::AddressKind;
 use lang_c::ast::*;
 use lang_c::span::{Node, Span};
 use lang_c::visit::Visit;
@@ -9,21 +9,21 @@ use std::collections::HashMap;
 /// Defines a register location.
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct LocationDefinition {
-    pub kind: LocationKind,
+    pub kind: AddressKind,
     pub name: String,
     pub datatype: String,
 }
 
 /// The set of registers that this visitor will return.
-pub type RegisterSet = HashMap<LocationDefinition, u32>;
+pub type AddressSet = HashMap<LocationDefinition, u32>;
 
 /// Extracts the register definitions from the AST.
-pub struct RegisterDefinitionsVisitor {
-    pub registers: RegisterSet,
+pub struct AddressDefinitionsVisitor {
+    pub registers: AddressSet,
     prefix: String,
 }
 
-impl RegisterDefinitionsVisitor {
+impl AddressDefinitionsVisitor {
     /// Create the new visitor with the FPGA project prefix.
     ///
     /// e.g. if the file is called `NiFpga_Main.h` then the prefix is Main.
@@ -58,7 +58,7 @@ impl RegisterDefinitionsVisitor {
 
 /// Extract the terms for the register kind and return the time
 /// and what is left.
-fn enum_name_to_types(name: &str) -> (LocationKind, &str) {
+fn enum_name_to_types(name: &str) -> (AddressKind, &str) {
     let mut kind = extract_type_from_start(name).unwrap();
     let mut type_name = name.strip_prefix(kind.prefix()).unwrap();
 
@@ -71,16 +71,16 @@ fn enum_name_to_types(name: &str) -> (LocationKind, &str) {
 }
 
 /// Run through the options confirming the prefix.
-fn extract_type_from_start(name: &str) -> Option<LocationKind> {
+fn extract_type_from_start(name: &str) -> Option<AddressKind> {
     // Must go from more specific to more general to avoid
     // false matches.
     // Also no point in including the size since that is marked
     // by a suffix.
     let options = [
-        LocationKind::ControlArray,
-        LocationKind::IndicatorArray,
-        LocationKind::Control,
-        LocationKind::Indicator,
+        AddressKind::ControlArray,
+        AddressKind::IndicatorArray,
+        AddressKind::Control,
+        AddressKind::Indicator,
     ];
 
     for kind in options {
@@ -125,7 +125,7 @@ fn get_typedef_name(node: &Declaration) -> Option<String> {
     None
 }
 
-impl<'ast> Visit<'ast> for RegisterDefinitionsVisitor {
+impl<'ast> Visit<'ast> for AddressDefinitionsVisitor {
     fn visit_declaration(&mut self, declaration: &'ast Declaration, _span: &'ast Span) {
         if is_typedef(declaration) {
             if let Some(name) = get_typedef_name(declaration) {
@@ -149,7 +149,7 @@ mod tests {
     use lang_c::driver::{parse_preprocessed, Config};
     use lang_c::visit::Visit;
 
-    fn visit_c_code(content: &str, visitor: &mut RegisterDefinitionsVisitor) {
+    fn visit_c_code(content: &str, visitor: &mut AddressDefinitionsVisitor) {
         let config = Config::default();
         let file = parse_preprocessed(&config, content.to_owned()).unwrap();
         visitor.visit_translation_unit(&file.unit);
@@ -163,7 +163,7 @@ mod tests {
 
         "#;
 
-        let mut visitor = RegisterDefinitionsVisitor::new("Main");
+        let mut visitor = AddressDefinitionsVisitor::new("Main");
         visit_c_code(content, &mut visitor);
         assert_eq!(visitor.registers.len(), 0);
     }
@@ -177,12 +177,12 @@ mod tests {
         } NiFpga_Main_ControlU8;
         "#;
 
-        let mut visitor = RegisterDefinitionsVisitor::new("Main");
+        let mut visitor = AddressDefinitionsVisitor::new("Main");
         visit_c_code(content, &mut visitor);
 
         let expected = vec![(
             LocationDefinition {
-                kind: LocationKind::Control,
+                kind: AddressKind::Control,
                 name: "U8Control".to_owned(),
                 datatype: "U8".to_owned(),
             },
@@ -203,12 +203,12 @@ mod tests {
         } NiFpga_If_ControlU8;
         "#;
 
-        let mut visitor = RegisterDefinitionsVisitor::new("If");
+        let mut visitor = AddressDefinitionsVisitor::new("If");
         visit_c_code(content, &mut visitor);
 
         let expected = vec![(
             LocationDefinition {
-                kind: LocationKind::Control,
+                kind: AddressKind::Control,
                 name: "U8Control".to_owned(),
                 datatype: "U8".to_owned(),
             },
@@ -229,12 +229,12 @@ mod tests {
         } NiFpga_Main_ControlU32;
         "#;
 
-        let mut visitor = RegisterDefinitionsVisitor::new("Main");
+        let mut visitor = AddressDefinitionsVisitor::new("Main");
         visit_c_code(content, &mut visitor);
 
         let expected = vec![(
             LocationDefinition {
-                kind: LocationKind::Control,
+                kind: AddressKind::Control,
                 name: "U8Control".to_owned(),
                 datatype: "U32".to_owned(),
             },
@@ -256,13 +256,13 @@ mod tests {
             } NiFpga_Main_ControlU8;
         "#;
 
-        let mut visitor = RegisterDefinitionsVisitor::new("Main");
+        let mut visitor = AddressDefinitionsVisitor::new("Main");
         visit_c_code(content, &mut visitor);
 
         let expected = vec![
             (
                 LocationDefinition {
-                    kind: LocationKind::Control,
+                    kind: AddressKind::Control,
                     name: "U8Control".to_owned(),
                     datatype: "U8".to_owned(),
                 },
@@ -270,7 +270,7 @@ mod tests {
             ),
             (
                 LocationDefinition {
-                    kind: LocationKind::Control,
+                    kind: AddressKind::Control,
                     name: "U8Sum".to_owned(),
                     datatype: "U8".to_owned(),
                 },
@@ -292,12 +292,12 @@ mod tests {
         } NiFpga_Main_IndicatorU8;
         "#;
 
-        let mut visitor = RegisterDefinitionsVisitor::new("Main");
+        let mut visitor = AddressDefinitionsVisitor::new("Main");
         visit_c_code(content, &mut visitor);
 
         let expected = vec![(
             LocationDefinition {
-                kind: LocationKind::Indicator,
+                kind: AddressKind::Indicator,
                 name: "U8Result".to_owned(),
                 datatype: "U8".to_owned(),
             },
@@ -325,13 +325,13 @@ mod tests {
             } NiFpga_Main_ControlArrayU8Size;
         "#;
 
-        let mut visitor = RegisterDefinitionsVisitor::new("Main");
+        let mut visitor = AddressDefinitionsVisitor::new("Main");
         visit_c_code(content, &mut visitor);
 
         let expected = vec![
             (
                 LocationDefinition {
-                    kind: LocationKind::ControlArray,
+                    kind: AddressKind::ControlArray,
                     name: "U8ControlArray".to_owned(),
                     datatype: "U8".to_owned(),
                 },
@@ -339,7 +339,7 @@ mod tests {
             ),
             (
                 LocationDefinition {
-                    kind: LocationKind::ControlArray,
+                    kind: AddressKind::ControlArray,
                     name: "U8SumArray".to_owned(),
                     datatype: "U8".to_owned(),
                 },
@@ -347,7 +347,7 @@ mod tests {
             ),
             (
                 LocationDefinition {
-                    kind: LocationKind::ControlArraySize,
+                    kind: AddressKind::ControlArraySize,
                     name: "U8ControlArray".to_owned(),
                     datatype: "U8".to_owned(),
                 },
@@ -355,7 +355,7 @@ mod tests {
             ),
             (
                 LocationDefinition {
-                    kind: LocationKind::ControlArraySize,
+                    kind: AddressKind::ControlArraySize,
                     name: "U8SumArray".to_owned(),
                     datatype: "U8".to_owned(),
                 },
@@ -383,13 +383,13 @@ mod tests {
         } NiFpga_Main_IndicatorArrayU8Size;
         "#;
 
-        let mut visitor = RegisterDefinitionsVisitor::new("Main");
+        let mut visitor = AddressDefinitionsVisitor::new("Main");
         visit_c_code(content, &mut visitor);
 
         let expected = vec![
             (
                 LocationDefinition {
-                    kind: LocationKind::IndicatorArray,
+                    kind: AddressKind::IndicatorArray,
                     name: "U8ResultArray".to_owned(),
                     datatype: "U8".to_owned(),
                 },
@@ -397,7 +397,7 @@ mod tests {
             ),
             (
                 LocationDefinition {
-                    kind: LocationKind::IndicatorArraySize,
+                    kind: AddressKind::IndicatorArraySize,
                     name: "U8ResultArray".to_owned(),
                     datatype: "U8".to_owned(),
                 },

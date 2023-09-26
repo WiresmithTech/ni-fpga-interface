@@ -5,7 +5,7 @@ use lang_c::ast::{Constant, Expression, IntegerBase};
 
 /// The type of register value we have found.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-pub enum LocationKind {
+pub enum AddressKind {
     Control,
     Indicator,
     ControlArray,
@@ -14,14 +14,14 @@ pub enum LocationKind {
     IndicatorArraySize,
 }
 
-impl LocationKind {
+impl AddressKind {
     /// Returns if the kind is one of the array types.
     pub fn is_array(&self) -> bool {
         match self {
-            LocationKind::ControlArray
-            | LocationKind::IndicatorArray
-            | LocationKind::ControlArraySize
-            | LocationKind::IndicatorArraySize => true,
+            AddressKind::ControlArray
+            | AddressKind::IndicatorArray
+            | AddressKind::ControlArraySize
+            | AddressKind::IndicatorArraySize => true,
             _ => false,
         }
     }
@@ -29,8 +29,8 @@ impl LocationKind {
     /// If it is an array type, it will return the size version of it.
     pub fn with_size(self) -> Self {
         match self {
-            LocationKind::ControlArray => LocationKind::ControlArraySize,
-            LocationKind::IndicatorArray => LocationKind::IndicatorArraySize,
+            AddressKind::ControlArray => AddressKind::ControlArraySize,
+            AddressKind::IndicatorArray => AddressKind::IndicatorArraySize,
             _ => self,
         }
     }
@@ -38,12 +38,12 @@ impl LocationKind {
     /// Convert the type to the naming prefix used in the C interface.
     pub const fn prefix(&self) -> &str {
         match self {
-            LocationKind::Control => "Control",
-            LocationKind::Indicator => "Indicator",
-            LocationKind::ControlArray => "ControlArray",
-            LocationKind::IndicatorArray => "IndicatorArray",
-            LocationKind::ControlArraySize => "ControlArray",
-            LocationKind::IndicatorArraySize => "IndicatorArray",
+            AddressKind::Control => "Control",
+            AddressKind::Indicator => "Indicator",
+            AddressKind::ControlArray => "ControlArray",
+            AddressKind::IndicatorArray => "IndicatorArray",
+            AddressKind::ControlArraySize => "ControlArray",
+            AddressKind::IndicatorArraySize => "IndicatorArray",
         }
     }
 }

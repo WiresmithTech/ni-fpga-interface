@@ -1,5 +1,5 @@
-use super::register_definitions::LocationKind;
-use super::register_definitions_visitor::{LocationDefinition, RegisterSet};
+use super::address_definitions::AddressKind;
+use super::address_definitions_visitor::{AddressSet, LocationDefinition};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens, TokenStreamExt};
 use std::str::FromStr;
@@ -8,17 +8,17 @@ use std::str::FromStr;
 /// including the required include statements.
 ///
 /// The module is declared public for easy use.
-pub fn generate_register_module(registers: &RegisterSet) -> impl ToTokens {
+pub fn generate_register_module(registers: &AddressSet) -> impl ToTokens {
     let mut tokens = quote! {};
     for (def, address) in registers {
         match def.kind {
-            LocationKind::Control | LocationKind::Indicator => {
+            AddressKind::Control | AddressKind::Indicator => {
                 let register = generate_register_definition(def, *address, None);
                 tokens.append_all(quote! {
                     #register
                 });
             }
-            LocationKind::ControlArray | LocationKind::IndicatorArray => {
+            AddressKind::ControlArray | AddressKind::IndicatorArray => {
                 let mut size_def = def.clone();
                 size_def.kind = def.kind.with_size();
                 let array_size = registers.get(&size_def).expect("Array size not found.");
@@ -27,7 +27,7 @@ pub fn generate_register_module(registers: &RegisterSet) -> impl ToTokens {
                     #register
                 });
             }
-            LocationKind::ControlArraySize | LocationKind::IndicatorArraySize => {
+            AddressKind::ControlArraySize | AddressKind::IndicatorArraySize => {
                 continue;
             }
         }
@@ -79,19 +79,19 @@ fn generate_register_definition(
     let address = TokenStream::from_str(&format!("0x{:X}", address)).unwrap();
 
     match definition.kind {
-        LocationKind::Control | LocationKind::Indicator => {
+        AddressKind::Control | AddressKind::Indicator => {
             quote! {
                 pub const #name: Register<#ty> = Register::new(#address);
             }
         }
-        LocationKind::ControlArray | LocationKind::IndicatorArray => {
+        AddressKind::ControlArray | AddressKind::IndicatorArray => {
             let array_size = array_size.expect("Need size to generate an array register.");
             let array_size = TokenStream::from_str(&format!("{array_size}")).unwrap();
             quote! {
                 pub const #name: ArrayRegister<#ty, #array_size> = ArrayRegister::new(#address);
             }
         }
-        LocationKind::ControlArraySize | LocationKind::IndicatorArraySize => {
+        AddressKind::ControlArraySize | AddressKind::IndicatorArraySize => {
             quote! {}
         }
     }
@@ -106,7 +106,7 @@ mod tests {
         let definition = LocationDefinition {
             name: "control".to_string(),
             datatype: "U8".to_string(),
-            kind: LocationKind::Control,
+            kind: AddressKind::Control,
         };
 
         let address = 0x1800A;
@@ -125,7 +125,7 @@ mod tests {
         let definition = LocationDefinition {
             name: "indicator".to_string(),
             datatype: "I64".to_string(),
-            kind: LocationKind::Indicator,
+            kind: AddressKind::Indicator,
         };
 
         let address = 0x1802A;
@@ -144,7 +144,7 @@ mod tests {
         let definition = LocationDefinition {
             name: "control".to_string(),
             datatype: "Sgl".to_string(),
-            kind: LocationKind::Control,
+            kind: AddressKind::Control,
         };
 
         let address = 0x1800A;
@@ -163,7 +163,7 @@ mod tests {
         let definition = LocationDefinition {
             name: "control".to_string(),
             datatype: "Dbl".to_string(),
-            kind: LocationKind::Control,
+            kind: AddressKind::Control,
         };
 
         let address = 0x1800A;
@@ -182,7 +182,7 @@ mod tests {
         let definition = LocationDefinition {
             name: "control".to_string(),
             datatype: "U8".to_string(),
-            kind: LocationKind::ControlArray,
+            kind: AddressKind::ControlArray,
         };
 
         let address = 0x1800A;
@@ -201,7 +201,7 @@ mod tests {
         let definition = LocationDefinition {
             name: "indicator".to_string(),
             datatype: "I64".to_string(),
-            kind: LocationKind::IndicatorArray,
+            kind: AddressKind::IndicatorArray,
         };
 
         let address = 0x1802A;
@@ -221,7 +221,7 @@ mod tests {
         let definition = LocationDefinition {
             name: "control".to_string(),
             datatype: "U8".to_string(),
-            kind: LocationKind::ControlArraySize,
+            kind: AddressKind::ControlArraySize,
         };
 
         let address = 0x1800A;
@@ -236,7 +236,7 @@ mod tests {
         let definition = LocationDefinition {
             name: "indicator".to_string(),
             datatype: "I64".to_string(),
-            kind: LocationKind::IndicatorArraySize,
+            kind: AddressKind::IndicatorArraySize,
         };
 
         let address = 0x1802A;
@@ -248,12 +248,12 @@ mod tests {
 
     #[test]
     fn test_should_generate_a_public_module_with_registers() {
-        let mut registers = RegisterSet::new();
+        let mut registers = AddressSet::new();
         registers.insert(
             LocationDefinition {
                 name: "control".to_string(),
                 datatype: "U8".to_string(),
-                kind: LocationKind::Control,
+                kind: AddressKind::Control,
             },
             0x1800A,
         );
@@ -275,12 +275,12 @@ mod tests {
 
     #[test]
     fn test_should_extract_size_from_set_for_array_register() {
-        let mut registers = RegisterSet::new();
+        let mut registers = AddressSet::new();
         registers.insert(
             LocationDefinition {
                 name: "control".to_string(),
                 datatype: "U8".to_string(),
-                kind: LocationKind::ControlArray,
+                kind: AddressKind::ControlArray,
             },
             0x1800A,
         );
@@ -288,7 +288,7 @@ mod tests {
             LocationDefinition {
                 name: "control".to_string(),
                 datatype: "U8".to_string(),
-                kind: LocationKind::ControlArraySize,
+                kind: AddressKind::ControlArraySize,
             },
             5,
         );

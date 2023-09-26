@@ -2,10 +2,10 @@
 //!
 //! This is still in rough shape but seems to prove the basic concept.
 
-use super::register_definitions_visitor::RegisterDefinitionsVisitor;
+use super::address_definitions_visitor::AddressDefinitionsVisitor;
 use super::registers_generator::generate_register_module;
 use super::{
-    register_definitions_visitor::RegisterSet, string_constant_visitor::StringConstantVisitor,
+    address_definitions_visitor::AddressSet, string_constant_visitor::StringConstantVisitor,
 };
 use lang_c::driver::{parse, parse_preprocessed, Config};
 use lang_c::visit::Visit;
@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 
 pub struct InterfaceDescription {
     pub signature: String,
-    pub registers: RegisterSet,
+    pub registers: AddressSet,
 }
 
 impl InterfaceDescription {
@@ -67,7 +67,7 @@ impl InterfaceDescription {
 /// Once the AST has been parsed, we can extract the signature and register definitions.
 fn read_ast(prefix: &str, file: lang_c::ast::TranslationUnit) -> InterfaceDescription {
     let mut sig_visitor = StringConstantVisitor::new(prefix, "Signature");
-    let mut register_visitor = RegisterDefinitionsVisitor::new(prefix);
+    let mut register_visitor = AddressDefinitionsVisitor::new(prefix);
     sig_visitor.visit_translation_unit(&file);
     register_visitor.visit_translation_unit(&file);
     InterfaceDescription {
