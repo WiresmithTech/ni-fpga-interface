@@ -1,8 +1,10 @@
 //! Holds session management functions for the FPGA.
 //!
+mod data_interfaces;
 use std::sync::Once;
 
 use crate::error::{to_fpga_result, NiFpgaStatus};
+pub use data_interfaces::*;
 
 static LIB_INIT: Once = Once::new();
 

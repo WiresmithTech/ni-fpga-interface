@@ -1,12 +1,8 @@
 //! Implements the register interfaces to the FPGA.
 //!
 
-mod native_types;
-pub use native_types::*;
-
 use crate::error::Result;
-
-type RegisterAddress = u32;
+use crate::session::{RegisterAddress, RegisterInterface};
 
 /// Provides a binding to a register address including a type.
 ///
@@ -53,22 +49,6 @@ impl<T: Default + Copy, const N: usize> ArrayRegister<T, N> {
     pub fn write(&self, session: &impl RegisterInterface<T>, value: &[T; N]) -> Result<()> {
         session.write_array(self.address, value)
     }
-}
-
-pub trait RegisterInterface<T: Default + Copy> {
-    fn read(&self, address: RegisterAddress) -> Result<T>;
-    fn write(&self, address: RegisterAddress, data: T) -> Result<()>;
-    fn read_array<const N: usize>(&self, address: RegisterAddress) -> Result<[T; N]> {
-        let mut array: [T; N] = [T::default(); N];
-        self.read_array_mut(address, &mut array)?;
-        Ok(array)
-    }
-    fn read_array_mut<const N: usize>(
-        &self,
-        address: RegisterAddress,
-        array: &mut [T; N],
-    ) -> Result<()>;
-    fn write_array<const N: usize>(&self, address: RegisterAddress, data: &[T; N]) -> Result<()>;
 }
 
 /// Used to allow the implementation of clusters.

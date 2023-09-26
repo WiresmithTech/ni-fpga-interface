@@ -1,5 +1,6 @@
 {
     "rust-analyzer.linkedProjects": [
-        ".\\examples\\host_example\\Cargo.toml"
+        ".\\examples\\host_example\\Cargo.toml",
+        ".\\ni-fpga-interface\\Cargo.toml"
     ]
 }
