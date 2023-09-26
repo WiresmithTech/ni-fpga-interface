@@ -76,8 +76,8 @@ impl<'session> IrqContext<'session> {
                 &mut timed_out,
             );
 
-            if status != 0 {
-                return Err(FPGAError::from_code(status));
+            if status.is_error() {
+                return Err(status.into());
             }
         }
 
@@ -110,8 +110,8 @@ impl Session {
         unsafe {
             let status = NiFpga_ReserveIrqContext(self.handle, &mut handle);
 
-            if status != 0 {
-                return Err(FPGAError::from_code(status));
+            if status.is_error() {
+                return Err(status.into());
             }
         }
         Ok(IrqContext {
@@ -125,8 +125,8 @@ impl Session {
         unsafe {
             let status = NiFpga_AcknowledgeIrqs(self.handle, irqs);
 
-            if status != 0 {
-                return Err(FPGAError::from_code(status));
+            if status.is_error() {
+                return Err(status.into());
             }
         }
         Ok(())

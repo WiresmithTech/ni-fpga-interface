@@ -54,7 +54,6 @@ impl Session {
     }
 
     pub fn reset(&mut self) -> Result<(), crate::error::FPGAError> {
-        println!("reset");
         let result = unsafe { NiFpga_Reset(self.handle) };
 
         to_fpga_result((), result)
