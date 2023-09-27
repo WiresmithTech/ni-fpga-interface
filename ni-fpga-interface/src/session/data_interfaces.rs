@@ -1,3 +1,11 @@
+//! This module contains the interfaces for reading and writing data to the FPGA.
+//!
+//! There are two forms of this supported across the native data types:
+//!
+//! * Registers which are the front panel controls and indicators of the FPGA VI.
+//! * FIFOs which are the DMA FIFOs of the FPGA VI.
+
+use super::fifo_control::FifoAddress;
 use crate::error::NiFpgaStatus;
 use crate::error::{to_fpga_result, Result};
 use crate::session::{Session, SessionHandle};
@@ -10,7 +18,6 @@ use std::time::Duration;
 pub trait NativeFpgaType: Copy {}
 
 pub type RegisterAddress = u32;
-type FifoAddress = u32;
 
 pub trait RegisterInterface<T: Default + Copy> {
     fn read(&self, address: RegisterAddress) -> Result<T>;
@@ -28,16 +35,44 @@ pub trait RegisterInterface<T: Default + Copy> {
     fn write_array<const N: usize>(&self, address: RegisterAddress, data: &[T; N]) -> Result<()>;
 }
 
+/// The read region is created by calling [`FifoInterface::read_no_copy`] on the FIFO interface.
+///
+/// This returns this structure where you can use elements to read the data from the FIFO.
+///
+/// When this structure is dropped the elements are released back to the FIFO automatically.
 pub struct FifoReadRegion<'session, 'data, T: NativeFpgaType> {
     session: &'session Session,
     fifo: FifoAddress,
-    elements: &'data [T],
+    pub elements: &'data [T],
 }
 
+impl<'s, 'd, T: NativeFpgaType> Drop for FifoReadRegion<'s, 'd, T> {
+    fn drop(&mut self) {
+        // Cant return result from drop so ignore it.
+        let _ = self
+            .session
+            .release_fifo_elements(self.fifo, self.elements.len());
+    }
+}
+
+/// The write region is created by calling [`FifoInterface::write_no_copy`] on the FIFO interface.
+///
+/// This returns this structure where you can use elements to write the data to the FIFO as a mutable slice.
+///
+/// When this structure is dropped the elements are released back to the FIFO automatically.
 pub struct FifoWriteRegion<'session, 'data, T: NativeFpgaType> {
     session: &'session Session,
     fifo: FifoAddress,
-    elements: &'data mut [T],
+    pub elements: &'data mut [T],
+}
+
+impl<'s, 'd, T: NativeFpgaType> Drop for FifoWriteRegion<'s, 'd, T> {
+    fn drop(&mut self) {
+        // Cant return result from drop so ignore it.
+        let _ = self
+            .session
+            .release_fifo_elements(self.fifo, self.elements.len());
+    }
 }
 
 pub trait FifoInterface<T: NativeFpgaType> {

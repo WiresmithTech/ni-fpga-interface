@@ -1,6 +1,7 @@
 //! Holds session management functions for the FPGA.
 //!
 mod data_interfaces;
+pub mod fifo_control;
 use std::sync::Once;
 
 use crate::error::{to_fpga_result, NiFpgaStatus};
