@@ -2,6 +2,7 @@
 ///
 use std::time::Duration;
 
+/// The representation of a boolean in the FPGA interface.
 #[repr(transparent)]
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct FpgaBool(u8);
@@ -9,6 +10,22 @@ pub struct FpgaBool(u8);
 impl FpgaBool {
     pub const TRUE: FpgaBool = FpgaBool(1);
     pub const FALSE: FpgaBool = FpgaBool(0);
+}
+
+impl From<bool> for FpgaBool {
+    fn from(value: bool) -> Self {
+        if value {
+            FpgaBool::TRUE
+        } else {
+            FpgaBool::FALSE
+        }
+    }
+}
+
+impl From<FpgaBool> for bool {
+    fn from(value: FpgaBool) -> Self {
+        value.0 != 0
+    }
 }
 
 /// Wrapper for the FpgaTimeout fields to handle
@@ -53,5 +70,21 @@ mod tests {
             FpgaTimeoutMs::from(Some(Duration::from_millis(100))),
             FpgaTimeoutMs(100)
         );
+    }
+
+    #[test]
+    fn test_fpga_bool_into_bool() {
+        let bool_true: bool = FpgaBool::TRUE.into();
+        let bool_false: bool = FpgaBool::FALSE.into();
+        assert_eq!(bool_true, true);
+        assert_eq!(bool_false, false);
+    }
+
+    #[test]
+    fn test_bool_into_fpga_bool() {
+        let fpga_bool_true: FpgaBool = true.into();
+        let fpga_bool_false: FpgaBool = false.into();
+        assert_eq!(fpga_bool_true, FpgaBool::TRUE);
+        assert_eq!(fpga_bool_false, FpgaBool::FALSE);
     }
 }

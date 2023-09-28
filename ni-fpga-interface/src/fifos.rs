@@ -1,3 +1,5 @@
+//! Provides the high level interface for DMA FIFOs.
+
 use crate::error::FPGAError;
 use crate::session::fifo_control::{FifoAddress, PeerToPeerEndpoint};
 use crate::session::{FifoInterface, FifoReadRegion, FifoWriteRegion, NativeFpgaType, Session};

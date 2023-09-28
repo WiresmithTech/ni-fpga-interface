@@ -12,6 +12,25 @@ This crate is designed to make it easy to talk to a LabVIEW FPGA.
 
 See the examples folder for some fully worked examples including build support.
 
+## Supported Features
+
+These are the features supported and planned.
+
+Native types are the standard integer types as well as singles and double floats.
+
+| Feature | Supported |
+|---------|-----------|
+| Registers for native types | ✅ |
+| Registers for FXP numbers  | planned |
+| Registers for clusters     | TBC |
+| DMA for native types       | ✅ |
+| DMA FIFO controls          | ✅ |
+| IRQs                       | ✅ |
+| Session Control            | partial |
+| Multi-threading            | planned |
+| pattern for multi-fpga support | planned |
+| dynamic interface for multi-fpga support | planned | 
+
 ## Architecture
 
 The principle behind this approach is going to be to use as much of the generated C as possible instead of pre-building against the expected interface.

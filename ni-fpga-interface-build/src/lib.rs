@@ -1,3 +1,58 @@
+//! The NI Fpga Interface Builder is used to generate a Rust module
+//! with the definition of the interface of a given FPGA bitfile.
+//!
+//! This depends on the NI Fpga Interface crate and generates the
+//! definitions that it can use.
+//!
+//! # Example
+//!
+//! ```no_run
+//! use ni_fpga_interface_build::FpgaCInterface;
+//!
+//! FpgaCInterface::from_custom_header("NiFpga_prefix.h").build();
+//! ```
+//!
+//! This will generate a file in the output directory with the name `NiFpga_Main.rs`.
+//!
+//! This will contain a module with the definitions of registers and DMA FIFOs.
+//!
+//! # Example Output
+//!
+//! ```rust
+//! pub const SIGNATURE: &str = "A0613989B20F45FC6E79EB71383493E8";
+//!
+//! pub mod registers {
+//!     use ni_fpga_interface::registers::{ArrayRegister, Register};
+//!     pub const SglSumArray: ArrayRegister<f32, 4> = ArrayRegister::new(0x1801C);
+//!     pub const U8ControlArray: ArrayRegister<u8, 4> = ArrayRegister::new(0x18014);
+//!     pub const U8SumArray: ArrayRegister<u8, 4> = ArrayRegister::new(0x18010);
+//!     pub const SglControl: Register<f32> = Register::new(0x1802C);
+//!     pub const U8Sum: Register<u8> = Register::new(0x18006);
+//!     pub const U8Control: Register<u8> = Register::new(0x18002);
+//!     pub const SglSum: Register<f32> = Register::new(0x18028);
+//!     pub const SglResult: Register<f32> = Register::new(0x18024);
+//!     pub const SglResultArray: ArrayRegister<f32, 4> = ArrayRegister::new(0x18018);
+//!     pub const IRQs: Register<u32> = Register::new(0x18060);
+//!     pub const U8Result: Register<u8> = Register::new(0x1800A);
+//!     pub const U8ResultArray: ArrayRegister<u8, 4> = ArrayRegister::new(0x1800C);
+//!     pub const SglControlArray: ArrayRegister<f32, 4> = ArrayRegister::new(0x18020);
+//! }
+//!
+//! pub mod fifos {
+//!     use ni_fpga_interface::fifos::{ReadFifo, WriteFifo};
+//!     pub const NumbersFromFPGA: ReadFifo<u16> = ReadFifo::new(0x1);
+//!     pub const NumbersToFPGA: WriteFifo<u32> = WriteFifo::new(0x0);
+//! }
+//! ```
+//!
+//! To then use this in your system you can import it into a module.
+//!
+//! ```no_run
+//! mod fpga_defs {
+//!    include!(concat!(env!("OUT_DIR"), "/NiFpga_Main.rs"));
+//!}
+//! ```
+
 mod address_definitions;
 mod address_definitions_visitor;
 mod bindings_parser;
