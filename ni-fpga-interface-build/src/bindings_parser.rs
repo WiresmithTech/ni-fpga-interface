@@ -61,6 +61,7 @@ impl InterfaceDescription {
     fn generate_metadata_output(&self) -> impl ToTokens {
         let signature = &self.signature;
         quote! {
+            #[allow(dead_code)]
             pub const SIGNATURE: &str = #signature;
         }
     }
