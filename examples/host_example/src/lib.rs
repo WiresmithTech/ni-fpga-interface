@@ -1,3 +1,6 @@
+//! This module just holds common components
+//! to be used by the examples in the examples folder.
+
 use ni_fpga_interface::session::Session;
 use std::path::Path;
 

@@ -78,7 +78,7 @@ impl<'s, 'd, T: NativeFpgaType> Drop for FifoWriteRegion<'s, 'd, T> {
 pub trait FifoInterface<T: NativeFpgaType> {
     /// Reads the elements into the provided buffer up to the size of the buffer.
     ///
-    /// returns the number of elements left in the buffer.
+    /// returns the number of elements left in the buffer to read.
     fn read(&self, fifo: FifoAddress, buffer: &mut [T], timeout: Option<Duration>)
         -> Result<usize>;
 
