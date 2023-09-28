@@ -1,6 +1,6 @@
 use crate::error::FPGAError;
 use crate::session::fifo_control::FifoAddress;
-use crate::session::{FifoInterface, NativeFpgaType, Session};
+use crate::session::{FifoInterface, FifoReadRegion, FifoWriteRegion, NativeFpgaType, Session};
 use std::marker::PhantomData;
 use std::time::Duration;
 
@@ -9,7 +9,8 @@ pub struct ReadFifo<T: NativeFpgaType> {
     phantom: PhantomData<T>,
 }
 
-impl<T: NativeFpgaType> ReadFifo<T> {
+// check the 'static - should never have a lifetime in this - can we remove it somehow?
+impl<T: NativeFpgaType + 'static> ReadFifo<T> {
     pub const fn new(address: u32) -> Self {
         Self {
             address,
@@ -23,7 +24,16 @@ impl<T: NativeFpgaType> ReadFifo<T> {
         timeout: Option<Duration>,
         data: &mut [T],
     ) -> Result<usize, FPGAError> {
-        session.read(self.address, data, timeout)
+        session.read_fifo(self.address, data, timeout)
+    }
+
+    pub fn get_read_region<'d, 's: 'd>(
+        &'d mut self,
+        session: &'s impl FifoInterface<T>,
+        elements: usize,
+        timeout: Option<Duration>,
+    ) -> Result<(FifoReadRegion<'s, 'd, T>, usize), FPGAError> {
+        session.zero_copy_read(self.address, elements, timeout)
     }
 }
 
@@ -32,7 +42,8 @@ pub struct WriteFifo<T: NativeFpgaType> {
     phantom: PhantomData<T>,
 }
 
-impl<T: NativeFpgaType> WriteFifo<T> {
+// see note on 'static above. should try to remove it.
+impl<T: NativeFpgaType + 'static> WriteFifo<T> {
     pub const fn new(address: u32) -> Self {
         Self {
             address,
@@ -46,6 +57,15 @@ impl<T: NativeFpgaType> WriteFifo<T> {
         timeout: Option<Duration>,
         data: &[T],
     ) -> Result<usize, FPGAError> {
-        session.write(self.address, data, timeout)
+        session.write_fifo(self.address, data, timeout)
+    }
+
+    pub fn get_write_region<'d, 's: 'd>(
+        &'d mut self,
+        session: &'s impl FifoInterface<T>,
+        elements: usize,
+        timeout: Option<Duration>,
+    ) -> Result<(FifoWriteRegion<'s, 'd, T>, usize), FPGAError> {
+        session.zero_copy_write(self.address, elements, timeout)
     }
 }

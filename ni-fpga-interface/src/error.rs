@@ -73,6 +73,7 @@ impl NiFpgaStatus {
         -63038 => "The NI-RIO software on the host is not compatible with the software on the target. Upgrade the NI-RIO software on the host in order to connect to this target.",
         -63040 => "A connection could not be established to the specified remote device. Ensure that the device is on and accessible over the network, that NI-RIO software is installed, and that the RIO server is running and properly configured.",
         -63043 => "The RPC session is invalid. The target may have reset or been rebooted. Check the network connection and retry the operation.",
+        -63045 => "The requested feature is not supported when using a remote RIO session. Use a local RIO session instead.",
         -63082 => "The operation could not complete because another session is accessing the FIFO. Close the other session and retry.",
         -63083 => "A Read FIFO or Write FIFO function was called while the host had acquired elements of the FIFO. Release all acquired elements before reading or writing.",
         -63084 => "A function was called using a misaligned address. The address must be a multiple of the size of the data type.",

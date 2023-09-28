@@ -79,16 +79,21 @@ pub trait FifoInterface<T: NativeFpgaType> {
     /// Reads the elements into the provided buffer up to the size of the buffer.
     ///
     /// returns the number of elements left in the buffer to read.
-    fn read(&self, fifo: FifoAddress, buffer: &mut [T], timeout: Option<Duration>)
-        -> Result<usize>;
+    fn read_fifo(
+        &self,
+        fifo: FifoAddress,
+        buffer: &mut [T],
+        timeout: Option<Duration>,
+    ) -> Result<usize>;
 
     /// Writes the elements to the FPGA from the data slice.
     ///
     /// Returns the amount of free space in the FIFO.
-    fn write(&self, fifo: FifoAddress, data: &[T], timeout: Option<Duration>) -> Result<usize>;
+    fn write_fifo(&self, fifo: FifoAddress, data: &[T], timeout: Option<Duration>)
+        -> Result<usize>;
 
     /// Provides a region of memory to read from the FIFO.
-    fn read_no_copy(
+    fn zero_copy_read(
         &self,
         fifo: FifoAddress,
         elements: usize,
@@ -96,7 +101,7 @@ pub trait FifoInterface<T: NativeFpgaType> {
     ) -> Result<(FifoReadRegion<T>, usize)>;
 
     /// Provides a region of memory to write to the FIFO.
-    fn write_no_copy(
+    fn zero_copy_write(
         &self,
         fifo: FifoAddress,
         elements: usize,
@@ -143,24 +148,24 @@ macro_rules! impl_type_session_interface {
             }
 
             impl FifoInterface<$rust_type> for Session {
-                fn read(&self, fifo: u32, data: &mut [$rust_type], timeout: Option<Duration>) -> Result< usize> {
+                fn read_fifo(&self, fifo: u32, data: &mut [$rust_type], timeout: Option<Duration>) -> Result< usize> {
                     let mut elements_remaining: size_t = 0;
                     let return_code = unsafe {[< NiFpga_ReadFifo $fpga_type >](self.handle, fifo, data.as_mut_ptr(), data.len(), timeout.into(), &mut elements_remaining)};
                     to_fpga_result(elements_remaining, return_code)
                 }
-                fn write(&self, fifo: u32, data: &[$rust_type], timeout: Option<Duration>) -> Result<usize> {
+                fn write_fifo(&self, fifo: u32, data: &[$rust_type], timeout: Option<Duration>) -> Result<usize> {
                     let mut elements_remaining: size_t = 0;
                     let return_code = unsafe {[< NiFpga_WriteFifo $fpga_type >](self.handle, fifo, data.as_ptr(), data.len(), timeout.into(), &mut elements_remaining)};
                     to_fpga_result(elements_remaining, return_code)
                 }
-                fn read_no_copy(&self, fifo: u32, elements: usize, timeout: Option<Duration>) -> Result<(FifoReadRegion<$rust_type>, usize)> {
+                fn zero_copy_read(&self, fifo: u32, elements: usize, timeout: Option<Duration>) -> Result<(FifoReadRegion<$rust_type>, usize)> {
                     let mut elements_remaining: size_t = 0;
                     let mut data: *const $rust_type = std::ptr::null();
                     let return_code = unsafe {[< NiFpga_AcquireFifoReadElements $fpga_type >](self.handle, fifo, &mut data, elements, timeout.into(), &mut elements_remaining, &mut elements_remaining)};
                     let read_region = FifoReadRegion{session: self, fifo, elements: unsafe {std::slice::from_raw_parts(data, elements)}};
                     to_fpga_result((read_region, elements_remaining), return_code)
                 }
-                fn write_no_copy(&self, fifo: u32, elements: usize, timeout: Option<Duration>) -> Result<(FifoWriteRegion<$rust_type>, usize)> {
+                fn zero_copy_write(&self, fifo: u32, elements: usize, timeout: Option<Duration>) -> Result<(FifoWriteRegion<$rust_type>, usize)> {
                     let mut elements_remaining: size_t = 0;
                     let mut data: *mut $rust_type = std::ptr::null_mut();
                     let return_code = unsafe {[< NiFpga_AcquireFifoWriteElements $fpga_type >](self.handle, fifo, &mut data, elements, timeout.into(), &mut elements_remaining, &mut elements_remaining)};
