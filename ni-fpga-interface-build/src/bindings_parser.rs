@@ -26,7 +26,7 @@ impl InterfaceDescription {
         //use cc to find the best compiler.
         let build = cc::Build::new();
         config.cpp_command = build.get_compiler().path().to_str().unwrap().to_owned();
-        config.cpp_options = vec!["-EP".to_owned()];
+        config.cpp_options = vec!["-E".to_owned()];
         let file = parse(&config, new_path).unwrap().unit;
         read_ast(prefix, file)
     }
