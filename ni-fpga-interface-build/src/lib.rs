@@ -158,7 +158,7 @@ impl FpgaCInterface {
             &PathBuf::from(&self.custom_h),
         );
 
-        std::fs::write(&mod_path, interface_description.generate_rust_output()).unwrap();
+        std::fs::write(mod_path, interface_description.generate_rust_output()).unwrap();
     }
 }
 

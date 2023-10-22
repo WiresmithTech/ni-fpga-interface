@@ -4,7 +4,7 @@
 use lang_c::ast::{Constant, Expression, IntegerBase};
 
 /// The type of register value we have found.
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
 pub enum AddressKind {
     Control,
     Indicator,
@@ -19,13 +19,13 @@ pub enum AddressKind {
 impl AddressKind {
     /// Returns if the kind is one of the array types.
     pub fn is_array(&self) -> bool {
-        match self {
+        matches!(
+            self,
             AddressKind::ControlArray
-            | AddressKind::IndicatorArray
-            | AddressKind::ControlArraySize
-            | AddressKind::IndicatorArraySize => true,
-            _ => false,
-        }
+                | AddressKind::IndicatorArray
+                | AddressKind::ControlArraySize
+                | AddressKind::IndicatorArraySize
+        )
     }
 
     /// If it is an array type, it will return the size version of it.

@@ -53,7 +53,7 @@ impl InterfaceDescription {
             #registers
             #fifos
         };
-        println!("{}", tokens.to_string());
+        println!("{}", tokens);
         let file = syn::parse2(tokens).unwrap();
         prettyplease::unparse(&file)
     }
@@ -118,7 +118,7 @@ typedef struct NiFpga_FxpTypeInfo
 } NiFpga_FxpTypeInfo;
 
 "#;
-    output.write(common_types.as_bytes()).unwrap();
+    output.write_all(common_types.as_bytes()).unwrap();
 
     for line in BufReader::new(input).lines() {
         let line = line.unwrap();

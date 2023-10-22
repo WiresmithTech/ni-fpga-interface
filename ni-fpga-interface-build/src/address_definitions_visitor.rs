@@ -4,10 +4,10 @@ use super::address_definitions::AddressKind;
 use lang_c::ast::*;
 use lang_c::span::{Node, Span};
 use lang_c::visit::Visit;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 /// Defines a register location.
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
 pub struct LocationDefinition {
     pub kind: AddressKind,
     pub name: String,
@@ -15,7 +15,10 @@ pub struct LocationDefinition {
 }
 
 /// The set of registers that this visitor will return.
-pub type AddressSet = HashMap<LocationDefinition, u32>;
+///
+/// We use a BTree here so we get deterministic generation
+/// which was failing tests with HashMap.
+pub type AddressSet = BTreeMap<LocationDefinition, u32>;
 
 /// Extracts the register definitions from the AST.
 pub struct AddressDefinitionsVisitor {
@@ -29,12 +32,12 @@ impl AddressDefinitionsVisitor {
     /// e.g. if the file is called `NiFpga_Main.h` then the prefix is Main.
     pub fn new(interface_name: &str) -> Self {
         Self {
-            registers: HashMap::new(),
+            registers: BTreeMap::new(),
             prefix: format!("NiFpga_{interface_name}_"),
         }
     }
 
-    fn process_enum_type<'ast>(&mut self, node: &'ast EnumType, type_name: &str) {
+    fn process_enum_type(&mut self, node: &EnumType, type_name: &str) {
         let enum_name = type_name.strip_prefix(&self.prefix).unwrap();
         let (kind, type_name) = enum_name_to_types(enum_name);
 
@@ -49,7 +52,7 @@ impl AddressDefinitionsVisitor {
             };
 
             let assignment_express = &variant.expression.as_ref().unwrap().node;
-            let value = value_from_discriminant(&assignment_express);
+            let value = value_from_discriminant(assignment_express);
 
             self.registers.insert(definition, value);
         }
@@ -67,7 +70,7 @@ fn enum_name_to_types(name: &str) -> (AddressKind, &str) {
         type_name = type_name.strip_suffix("Size").unwrap();
     }
 
-    return (kind, type_name);
+    (kind, type_name)
 }
 
 /// Run through the options confirming the prefix.
@@ -84,14 +87,9 @@ fn extract_type_from_start(name: &str) -> Option<AddressKind> {
         AddressKind::TargetToHostFifo,
         AddressKind::HostToTargetFifo,
     ];
-
-    for kind in options {
-        if name.starts_with(kind.prefix()) {
-            return Some(kind);
-        }
-    }
-
-    return None;
+    options
+        .into_iter()
+        .find(|&kind| name.starts_with(kind.prefix()))
 }
 
 /// Extract the name of the individual control which is
@@ -103,15 +101,15 @@ fn control_indicator_name_from_full(full_name: &str) -> &str {
 /// Check if the declaration is a typedef.
 fn is_typedef(node: &Declaration) -> bool {
     for specifier in &node.specifiers {
-        match specifier.node {
-            DeclarationSpecifier::StorageClass(Node {
-                node: StorageClassSpecifier::Typedef,
-                ..
-            }) => return true,
-            _ => (),
+        if let DeclarationSpecifier::StorageClass(Node {
+            node: StorageClassSpecifier::Typedef,
+            ..
+        }) = specifier.node
+        {
+            return true;
         }
     }
-    return false;
+    false
 }
 
 /// Extract the name of a typedef declaration.
@@ -119,9 +117,8 @@ fn is_typedef(node: &Declaration) -> bool {
 /// If we can find an identifier then we return none.
 fn get_typedef_name(node: &Declaration) -> Option<String> {
     for declarator in node.declarators.iter() {
-        match &declarator.node.declarator.node.kind.node {
-            DeclaratorKind::Identifier(identifier) => return Some(identifier.node.name.clone()),
-            _ => (),
+        if let DeclaratorKind::Identifier(identifier) = &declarator.node.declarator.node.kind.node {
+            return Some(identifier.node.name.clone());
         }
     }
     None
@@ -132,12 +129,12 @@ impl<'ast> Visit<'ast> for AddressDefinitionsVisitor {
         if is_typedef(declaration) {
             if let Some(name) = get_typedef_name(declaration) {
                 for specifier in declaration.specifiers.iter() {
-                    match &specifier.node {
-                        DeclarationSpecifier::TypeSpecifier(Node {
-                            node: TypeSpecifier::Enum(node),
-                            ..
-                        }) => self.process_enum_type(&node.node, &name),
-                        _ => (),
+                    if let DeclarationSpecifier::TypeSpecifier(Node {
+                        node: TypeSpecifier::Enum(node),
+                        ..
+                    }) = &specifier.node
+                    {
+                        self.process_enum_type(&node.node, &name);
                     }
                 }
             }

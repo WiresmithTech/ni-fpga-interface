@@ -422,8 +422,8 @@ mod tests {
             pub mod fifos {
                 use ni_fpga_interface::fifos::{ ReadFifo, WriteFifo };
 
-                pub const to_fpga: WriteFifo<u8> = WriteFifo::new(0x1);
                 pub const from_fpga: ReadFifo<f32> = ReadFifo::new(0x2);
+                pub const to_fpga: WriteFifo<u8> = WriteFifo::new(0x1);
             }
         };
 

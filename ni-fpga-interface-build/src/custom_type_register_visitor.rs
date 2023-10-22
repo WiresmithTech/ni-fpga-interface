@@ -197,7 +197,7 @@ struct ConstantType<'a> {
     suffix: &'a str,
 }
 
-fn get_constant_type_from_name<'a, 'b>(prefix: &'a str, name: &'b str) -> Option<ConstantType<'b>> {
+fn get_constant_type_from_name<'b>(prefix: &str, name: &'b str) -> Option<ConstantType<'b>> {
     let short_name = name.strip_prefix(prefix);
 
     if let Some(name) = short_name {
