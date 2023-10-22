@@ -2,6 +2,7 @@
 //!
 mod data_interfaces;
 pub mod fifo_control;
+use std::ffi::c_char;
 use std::sync::Once;
 
 use crate::error::{to_fpga_result, NiFpgaStatus};
@@ -13,9 +14,9 @@ extern "C" {
     fn NiFpga_Initialize() -> i32;
     //fn NiFpga_Finalize() -> NiFpga_Status;
     fn NiFpga_Open(
-        bitfile: *const i8,
-        signature: *const i8,
-        resource: *const i8,
+        bitfile: *const c_char,
+        signature: *const c_char,
+        resource: *const c_char,
         attribute: u32,
         session: *mut SessionHandle,
     ) -> NiFpgaStatus;
@@ -26,6 +27,7 @@ extern "C" {
 
 pub type SessionHandle = u32;
 
+#[derive(Debug)]
 pub struct Session {
     pub handle: SessionHandle,
 }

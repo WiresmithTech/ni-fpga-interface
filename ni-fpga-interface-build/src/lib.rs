@@ -18,7 +18,7 @@
 //!
 //! # Example Output
 //!
-//! ```rust
+//! ```rust,ignore
 //! pub const SIGNATURE: &str = "A0613989B20F45FC6E79EB71383493E8";
 //!
 //! pub mod registers {
@@ -47,7 +47,7 @@
 //!
 //! To then use this in your system you can import it into a module.
 //!
-//! ```no_run
+//! ```rust,ignore
 //! mod fpga_defs {
 //!    include!(concat!(env!("OUT_DIR"), "/NiFpga_Main.rs"));
 //!}
@@ -71,6 +71,7 @@ pub struct FpgaCInterface {
     custom_h: PathBuf,
     custom_c: Option<PathBuf>,
     interface_name: String,
+    sysroot: Option<String>,
 }
 
 impl FpgaCInterface {
@@ -107,7 +108,21 @@ impl FpgaCInterface {
             custom_h: fpga_header,
             custom_c,
             interface_name,
+            sysroot: None,
         }
+    }
+
+    /// Sets the sysroot for the C compiler.
+    /// This is useful for cross compiling.
+    /// ```no_run
+    /// use ni_fpga_interface_build::FpgaCInterface;
+    /// FpgaCInterface::from_custom_header("NiFpga_prefix.h")
+    ///    .sysroot("C:\\build\\2023\\x64\\sysroots\\core2-64-nilrt-linux")
+    ///   .build();
+    /// ```
+    pub fn sysroot(&mut self, sysroot: impl Into<String>) -> &mut Self {
+        self.sysroot = Some(sysroot.into());
+        self
     }
 
     /// Build the C interface and generate rust bindings for it.
@@ -118,6 +133,11 @@ impl FpgaCInterface {
 
     fn build_lib(&self) {
         let mut build = cc::Build::new();
+
+        if let Some(path) = &self.sysroot {
+            build.flag(&format!("--sysroot={path}"));
+        }
+
         build.file(&self.common_c);
 
         if let Some(custom_c) = &self.custom_c {
