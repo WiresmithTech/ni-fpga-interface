@@ -7,6 +7,27 @@ This crate is designed to make it easy to talk to a LabVIEW FPGA.
 
 * The C interface needs to be exported with the "prefix" set to something without spaces and we expect a single directory with the NiFpga C and H files.
 
+## Getting Started
+
+1. Generate the FPGA C Interface using the generator that can be downloaded from https://www.ni.com/en/support/downloads/drivers/download.fpga-interface-c-api.html#477242
+2. Add the `ni-fpga-interface-build` crate as a build dependency and `ni-fpga-interface` as a normal dependency.
+3. Create a build script for your project and add the builder to the script. For example:
+    ```rust
+        fn main() {
+        let mut fpga_c_interface = ni_fpga_interface_build::FpgaCInterface::from_custom_header(
+            "../fpga_c_interface/NiFpga_Main.h",
+        );
+        fpga_c_interface.build();
+    }
+    ```
+4. Include the generated rust module in a module in your application.
+    ```rust
+    mod fpga_defs {
+        include!(concat!(env!("OUT_DIR"), "/NiFpga_Main.rs"));
+    }
+    ```
+5. Use the `ni-fpga-interface` APIs to access the FPGA.
+
 ## Examples
 
 See the examples folder for some fully worked examples including build support.
