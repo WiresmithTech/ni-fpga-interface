@@ -159,17 +159,19 @@ macro_rules! impl_type_session_interface {
                     to_fpga_result(elements_remaining, return_code)
                 }
                 fn zero_copy_read(&self, fifo: u32, elements: usize, timeout: Option<Duration>) -> Result<(FifoReadRegion<$rust_type>, usize)> {
+                    let mut elements_acquired: size_t = 0;
                     let mut elements_remaining: size_t = 0;
                     let mut data: *const $rust_type = std::ptr::null();
-                    let return_code = unsafe {[< NiFpga_AcquireFifoReadElements $fpga_type >](self.handle, fifo, &mut data, elements, timeout.into(), &mut elements_remaining, &mut elements_remaining)};
-                    let read_region = FifoReadRegion{session: self, fifo, elements: unsafe {std::slice::from_raw_parts(data, elements)}};
+                    let return_code = unsafe {[< NiFpga_AcquireFifoReadElements $fpga_type >](self.handle, fifo, &mut data, elements, timeout.into(), &mut elements_acquired, &mut elements_remaining)};
+                    let read_region = FifoReadRegion{session: self, fifo, elements: unsafe {std::slice::from_raw_parts(data, elements_acquired)}};
                     to_fpga_result((read_region, elements_remaining), return_code)
                 }
                 fn zero_copy_write(&self, fifo: u32, elements: usize, timeout: Option<Duration>) -> Result<(FifoWriteRegion<$rust_type>, usize)> {
+                    let mut elements_acquired: size_t = 0;
                     let mut elements_remaining: size_t = 0;
                     let mut data: *mut $rust_type = std::ptr::null_mut();
-                    let return_code = unsafe {[< NiFpga_AcquireFifoWriteElements $fpga_type >](self.handle, fifo, &mut data, elements, timeout.into(), &mut elements_remaining, &mut elements_remaining)};
-                    let write_region = FifoWriteRegion{session: self, fifo, elements: unsafe {std::slice::from_raw_parts_mut(data, elements)}};
+                    let return_code = unsafe {[< NiFpga_AcquireFifoWriteElements $fpga_type >](self.handle, fifo, &mut data, elements, timeout.into(), &mut elements_acquired, &mut elements_remaining)};
+                    let write_region = FifoWriteRegion{session: self, fifo, elements: unsafe {std::slice::from_raw_parts_mut(data, elements_acquired)}};
                     to_fpga_result((write_region, elements_remaining), return_code)
                 }
             }
