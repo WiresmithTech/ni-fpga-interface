@@ -18,6 +18,7 @@
 mod error;
 pub mod fifos;
 pub mod irq;
+mod nifpga_sys;
 pub mod registers;
 pub mod session;
 mod types;

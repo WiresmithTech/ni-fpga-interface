@@ -12,3 +12,7 @@ I still want to investigate the bitfile directly but using the C generator shoul
 
 I do think parsing the bitfile may end up being easier than the C code so I will see how the complex type support evolves.
 If it doesn't benefit from the C code then this could be considered, or making it an option.
+
+### Can I pass a session between LabVIEW and Rust?
+
+No the testing I've done suggests this isn't possible. 

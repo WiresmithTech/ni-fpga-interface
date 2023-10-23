@@ -2,39 +2,11 @@
 //!
 //! In general we recommend using the [`crate::fifos`] module for a higher level interface.
 
-use crate::error::{to_fpga_result, NiFpgaStatus, Result};
+use crate::error::{to_fpga_result, Result};
+use crate::nifpga_sys::*;
 use libc::size_t;
 
-use super::{Session, SessionHandle};
-
-pub type FifoAddress = u32;
-pub type PeerToPeerEndpoint = u32;
-
-#[link(name = "ni_fpga")]
-extern "C" {
-    fn NiFpga_ConfigureFifo2(
-        session: SessionHandle,
-        fifo: FifoAddress,
-        requested_depth: size_t,
-        actual_depth: *mut size_t,
-    ) -> NiFpgaStatus;
-
-    fn NiFpga_StartFifo(session: SessionHandle, fifo: FifoAddress) -> NiFpgaStatus;
-
-    fn NiFpga_StopFifo(session: SessionHandle, fifo: FifoAddress) -> NiFpgaStatus;
-
-    fn NiFpga_ReleaseFifoElements(
-        session: SessionHandle,
-        fifo: FifoAddress,
-        number_of_elements: size_t,
-    ) -> NiFpgaStatus;
-
-    fn NiFpga_GetPeerToPeerFifoEndpoint(
-        session: SessionHandle,
-        fifo: FifoAddress,
-        endpoint: *mut PeerToPeerEndpoint,
-    ) -> NiFpgaStatus;
-}
+use super::Session;
 
 impl Session {
     /// Specify the depth of the host memory part of the FIFO.

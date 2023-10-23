@@ -5,7 +5,6 @@ This crate is designed to make it easy to talk to a LabVIEW FPGA.
 
 ## Requirements
 
-* You need CLang installed and to be on the path for the C header pre-processing.
 * The C interface needs to be exported with the "prefix" set to something without spaces and we expect a single directory with the NiFpga C and H files.
 
 ## Examples
@@ -26,8 +25,8 @@ Native types are the standard integer types as well as singles and double floats
 | DMA for native types       | ✅ |
 | DMA FIFO controls          | ✅ |
 | IRQs                       | ✅ |
-| Session Control            | partial |
-| Multi-threading            | planned |
+| Session Control            | ✅ |
+| Multi-threading            | ✅ |
 | pattern for multi-fpga support | planned |
 | dynamic interface for multi-fpga support | planned | 
 
@@ -78,6 +77,8 @@ This needs some code generation as part of the build support to enable a safe wr
 ### Cross Compilation
 
 Cross-compilation should be a first-class consideration to ensure this is easy to use against a compactRIO target.
+
+I have tested the examples build against x64 and armv7 LinuxRT targets.
 
 ## Planned Approach
 

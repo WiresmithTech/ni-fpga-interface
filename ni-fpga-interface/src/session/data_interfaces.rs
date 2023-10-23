@@ -5,11 +5,10 @@
 //! * Registers which are the front panel controls and indicators of the FPGA VI.
 //! * FIFOs which are the DMA FIFOs of the FPGA VI.
 
-use super::fifo_control::FifoAddress;
-use crate::error::NiFpgaStatus;
 use crate::error::{to_fpga_result, Result};
-use crate::session::{Session, SessionHandle};
-use crate::types::{FpgaBool, FpgaTimeoutMs};
+use crate::nifpga_sys::*;
+use crate::session::Session;
+use crate::types::FpgaBool;
 use libc::size_t;
 use paste::paste;
 use std::time::Duration;
@@ -113,17 +112,6 @@ pub trait FifoInterface<T: NativeFpgaType> {
 macro_rules! impl_type_session_interface {
     ($rust_type:ty, $fpga_type:literal) => {
 
-        #[link(name = "ni_fpga")]
-        extern "C" {
-            paste! { fn [<NiFpga_Read $fpga_type >](session: SessionHandle, offset: u32, value: *mut $rust_type) -> NiFpgaStatus; }
-            paste! { fn [<NiFpga_Write $fpga_type >](session: SessionHandle, offset: u32, value: $rust_type) -> NiFpgaStatus; }
-            paste! { fn [<NiFpga_ReadArray $fpga_type >](session: SessionHandle, offset: u32, value: *mut $rust_type, size: size_t) -> NiFpgaStatus; }
-            paste! { fn [<NiFpga_WriteArray $fpga_type >](session: SessionHandle, offset: u32, value: *const $rust_type, size: size_t) -> NiFpgaStatus; }
-            paste! { fn [<NiFpga_ReadFifo $fpga_type >](session: SessionHandle, fifo: u32, data: *mut $rust_type, number_of_elements: size_t, timeout_ms: FpgaTimeoutMs, elements_remaining: *mut size_t) -> NiFpgaStatus; }
-            paste! { fn [<NiFpga_WriteFifo $fpga_type >](session: SessionHandle, fifo: u32, data: *const $rust_type, number_of_elements: size_t, timeout_ms: FpgaTimeoutMs, elements_remaining: *mut size_t) -> NiFpgaStatus;}
-            paste! { fn [<NiFpga_AcquireFifoReadElements $fpga_type >](session: SessionHandle, fifo: u32, elements: *mut *const $rust_type, elements_requested: size_t, timeout_ms: FpgaTimeoutMs, elements_acquired: *mut size_t, elements_remaining: *mut size_t) -> NiFpgaStatus; }
-            paste! { fn [<NiFpga_AcquireFifoWriteElements $fpga_type >](session: SessionHandle, fifo: u32, elements: *mut *mut $rust_type, elements_requested: size_t, timeout_ms: FpgaTimeoutMs, elements_acquired: *mut size_t, elements_remaining: *mut size_t) -> NiFpgaStatus; }
-        }
 
         paste! {
             impl NativeFpgaType for $rust_type {}

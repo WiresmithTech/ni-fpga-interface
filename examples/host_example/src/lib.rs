@@ -26,6 +26,7 @@ pub fn connect_fpga() -> Session {
         bitfile.to_str().unwrap(),
         fpga_defs::SIGNATURE,
         RESOURCE,
+        &Default::default(),
     )
     .unwrap();
 
