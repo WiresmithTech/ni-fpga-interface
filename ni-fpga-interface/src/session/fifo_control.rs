@@ -10,6 +10,7 @@ use super::{Session, SessionHandle};
 pub type FifoAddress = u32;
 pub type PeerToPeerEndpoint = u32;
 
+#[link(name = "ni_fpga")]
 extern "C" {
     fn NiFpga_ConfigureFifo2(
         session: SessionHandle,

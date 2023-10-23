@@ -3,6 +3,7 @@
 #[derive(Debug)]
 pub enum FPGAError {
     InternalError(NiFpgaStatus),
+    ContextAlreadyActive,
 }
 
 pub type Result<T> = core::result::Result<T, FPGAError>;

@@ -10,6 +10,7 @@ use crate::{
 
 type IrqContextHandle = *const c_void;
 
+#[link(name = "ni_fpga")]
 extern "C" {
     fn NiFpga_ReserveIrqContext(
         session: SessionHandle,

@@ -9,10 +9,10 @@ fn main() {
 
     let output_reg = fpga_defs::registers::U8Control;
     let input_1_reg = fpga_defs::registers::U8Result;
-    let value = output_reg.read(&session).unwrap();
+    let value = input_1_reg.read(&session).unwrap();
     println!("Value: {value}");
-    input_1_reg.write(&session, 0x55).unwrap();
-    let value = output_reg.read(&session).unwrap();
+    output_reg.write(&session, 0x55).unwrap();
+    let value = input_1_reg.read(&session).unwrap();
     println!("Value: {value}");
 
     let output_array = fpga_defs::registers::U8ControlArray;

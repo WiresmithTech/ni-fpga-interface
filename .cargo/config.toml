@@ -1,6 +1,6 @@
 [target.x86_64-unknown-linux-gnu]
 linker = "C:\\build\\2023\\x64\\sysroots\\x86_64-w64-mingw32\\usr\\bin\\x86_64-nilrt-linux\\x86_64-nilrt-linux-gcc"
-ar = "C:\\build\\2023\\x64\\sysroots\\x86_64-w64-mingw32\\usr\\bin\\x86_64-nilrt-linux\\x86_64-nilrt-linux-ar"
+#ar = "C:\\build\\2023\\x64\\sysroots\\x86_64-w64-mingw32\\usr\\bin\\x86_64-nilrt-linux\\x86_64-nilrt-linux-ar"
 rustflags = [
 "-C", "link-arg=--sysroot=C:\\build\\2023\\x64\\sysroots\\core2-64-nilrt-linux"
 ]

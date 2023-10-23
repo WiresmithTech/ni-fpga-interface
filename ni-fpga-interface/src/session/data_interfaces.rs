@@ -113,6 +113,7 @@ pub trait FifoInterface<T: NativeFpgaType> {
 macro_rules! impl_type_session_interface {
     ($rust_type:ty, $fpga_type:literal) => {
 
+        #[link(name = "ni_fpga")]
         extern "C" {
             paste! { fn [<NiFpga_Read $fpga_type >](session: SessionHandle, offset: u32, value: *mut $rust_type) -> NiFpgaStatus; }
             paste! { fn [<NiFpga_Write $fpga_type >](session: SessionHandle, offset: u32, value: $rust_type) -> NiFpgaStatus; }
