@@ -43,7 +43,7 @@ pub fn generate_register_module(registers: &AddressSet) -> impl ToTokens {
             #[allow(dead_code)]
             pub mod registers {
             use ni_fpga_interface::registers::{ ArrayRegister, Register};
-
+            use ni_fpga_interface::types::FpgaBool;
             #tokens
         }
     }
