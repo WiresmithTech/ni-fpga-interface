@@ -3,7 +3,7 @@ resolver = "2"
 members = ["ni-fpga-interface", "ni-fpga-interface-build", "examples/host_example"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["James McNally <james@wiresmithtech.com>"]
 description = "Provide the ability to access an NI FPGA application from Rust"

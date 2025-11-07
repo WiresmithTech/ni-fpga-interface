@@ -21,4 +21,6 @@ pub mod irq;
 mod nifpga_sys;
 pub mod registers;
 pub mod session;
-mod types;
+pub mod types;
+
+pub use error::*;
