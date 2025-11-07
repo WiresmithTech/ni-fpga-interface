@@ -1,14 +1,15 @@
 //! Error support for the FPGA Interface.
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum FPGAError {
+    #[error("Internal error: {0}")]
     InternalError(NiFpgaStatus),
+    #[error("Context already active")]
     ContextAlreadyActive,
 }
 
 pub type Result<T> = core::result::Result<T, FPGAError>;
 
-impl FPGAError {}
 
 impl From<NiFpgaStatus> for FPGAError {
     fn from(status: NiFpgaStatus) -> Self {
