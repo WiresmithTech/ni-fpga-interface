@@ -90,6 +90,7 @@ fn type_string_to_type(type_string: &str) -> impl ToTokens {
         "I64" => quote! {i64},
         "Sgl" => quote! {f32},
         "Dbl" => quote! {f64},
+        "Bool" => quote! {FpgaBool},
         _ => panic!("Unknown type {}", type_string),
     }
 }
@@ -177,6 +178,44 @@ mod tests {
 
         let expected = quote! {
             pub const indicator: Register<i64> = Register::new(0x1802A);
+        };
+
+        assert_eq!(tokens.to_token_stream().to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_generate_control_register_bool() {
+        let definition = LocationDefinition {
+            name: "control".to_string(),
+            datatype: "Bool".to_string(),
+            kind: AddressKind::Control,
+        };
+
+        let address = 0x1800A;
+
+        let tokens = generate_address_definition(&definition, address, None);
+
+        let expected = quote! {
+            pub const control: Register<FpgaBool> = Register::new(0x1800A);
+        };
+
+        assert_eq!(tokens.to_token_stream().to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_generate_indicator_register_bool() {
+        let definition = LocationDefinition {
+            name: "indicator".to_string(),
+            datatype: "Bool".to_string(),
+            kind: AddressKind::Indicator,
+        };
+
+        let address = 0x1802A;
+
+        let tokens = generate_address_definition(&definition, address, None);
+
+        let expected = quote! {
+            pub const indicator: Register<FpgaBool> = Register::new(0x1802A);
         };
 
         assert_eq!(tokens.to_token_stream().to_string(), expected.to_string());
