@@ -11,3 +11,7 @@ Cargo.lock
 # LabVIEW project files
 *.lvlps
 *.aliases
+
+# IDEs
+.vscode
+.idea

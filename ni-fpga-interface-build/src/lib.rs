@@ -181,15 +181,16 @@ mod test {
 
     #[test]
     fn test_constructs_from_custom_header_absolute_path() {
+        #[cfg(target_os = "linux")]
+        let fpga_header = "/home/user/fpga/NiFpga_fpga.h";
+        #[cfg(target_os = "windows")]
         let fpga_header = "C:\\fpga\\NiFpga_fpga.h";
+        let folder = PathBuf::from(fpga_header).parent().unwrap().to_path_buf();
         let fpga_interface = FpgaCInterface::from_custom_header(fpga_header);
-        assert_eq!(fpga_interface.common_c, PathBuf::from("C:\\fpga\\NiFpga.c"));
+        assert_eq!(fpga_interface.common_c, folder.join("NiFpga.c"));
         //this is none since it wont exist in test environment.
         assert_eq!(fpga_interface.custom_c, None);
-        assert_eq!(
-            fpga_interface.custom_h,
-            PathBuf::from("C:\\fpga\\NiFpga_fpga.h")
-        );
+        assert_eq!(fpga_interface.custom_h, folder.join("NiFpga_fpga.h"));
         assert_eq!(fpga_interface.interface_name, "fpga");
     }
 }
