@@ -2,6 +2,8 @@
 //!
 mod data_interfaces;
 pub mod fifo_control;
+
+use std::fmt::Debug;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -83,10 +85,18 @@ impl Default for SessionOptions {
     }
 }
 
+#[derive(Clone)]
 pub struct Session {
     pub handle: SessionHandle,
     close_attribute: u32,
     _context: Arc<NiFpgaContext>,
+}
+
+impl Debug for Session {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Session").field("handle", &self.handle).field("close_attribute", &self.close_attribute).finish()
+
+    }
 }
 
 impl Session {
