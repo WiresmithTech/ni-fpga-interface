@@ -41,6 +41,7 @@ pub fn generate_register_module(registers: &AddressSet) -> impl ToTokens {
     quote! {
             #[allow(non_upper_case_globals)]
             #[allow(dead_code)]
+            #[allow(unused_imports)]
             pub mod registers {
             use ni_fpga_interface::registers::{ ArrayRegister, Register};
             use ni_fpga_interface::types::FpgaBool;
@@ -71,6 +72,7 @@ pub fn generate_fifo_module(addresses: &AddressSet) -> impl ToTokens {
     quote! {
             #[allow(non_upper_case_globals)]
             #[allow(dead_code)]
+            #[allow(unused_imports)]
             pub mod fifos {
             use ni_fpga_interface::fifos::{ ReadFifo, WriteFifo };
             #tokens
