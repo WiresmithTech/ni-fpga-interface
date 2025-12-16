@@ -25,7 +25,6 @@ macro_rules! impl_type_session_interface {
     }
 }
 
-#[cfg_attr(not(test), link(name = "ni_fpga"))]
 extern "C" {
     pub fn NiFpga_Initialize() -> NiFpgaStatus;
     pub fn NiFpga_Finalize() -> NiFpgaStatus;
