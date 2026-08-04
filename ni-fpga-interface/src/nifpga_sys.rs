@@ -1,7 +1,7 @@
 use crate::error::NiFpgaStatus;
 use crate::types::{FpgaBool, FpgaTimeoutMs, IrqSelection};
 use libc::{c_char, c_void, size_t};
-use paste::paste;
+use pastey::paste;
 
 pub type SessionHandle = u32;
 
