@@ -10,7 +10,7 @@ use crate::nifpga_sys::*;
 use crate::session::Session;
 use crate::types::FpgaBool;
 use libc::size_t;
-use paste::paste;
+use pastey::paste;
 use std::time::Duration;
 
 /// Marker trait for the types that are supported directly by the FPGA interface.
