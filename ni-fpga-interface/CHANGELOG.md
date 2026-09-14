@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/WiresmithTech/ni-fpga-interface/compare/ni-fpga-interface-v0.2.0...ni-fpga-interface-v0.2.1) - 2026-08-04
+
+### Other
+
+- Migrate from unmaintained paste to pastey
+- release v0.2.0
+
 ## [0.2.0](https://github.com/WiresmithTech/ni-fpga-interface/compare/ni-fpga-interface-v0.1.0...ni-fpga-interface-v0.2.0) - 2026-06-26
 
 ### Added
